@@ -1,3 +1,3 @@
 import { defineConfig } from 'astro/config';
 
-export default defineConfig({ site: 'https://manyxlabs.com' });
+export default defineConfig({ site: 'https://www.manyxlabs.com' });

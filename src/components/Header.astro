@@ -17,6 +17,7 @@
   </a>
   <nav aria-label="Main">
     <a href="/#tools">Tools</a>
+    <a class="wide" href="/photo-size/">Size guides</a>
     <a href="/#teams">For teams</a>
   </nav>
 </header>
@@ -36,6 +37,7 @@
     font-weight: 650;
     letter-spacing: -0.01em;
     text-decoration: none;
+    white-space: nowrap;
   }
 
   nav {
@@ -47,6 +49,14 @@
     color: var(--muted);
     font-size: 0.9375rem;
     text-decoration: none;
+    white-space: nowrap;
+  }
+
+  /* Phones keep two links; the guides are still a tap away in the footer and the tools. */
+  @media (max-width: 479px) {
+    .wide {
+      display: none;
+    }
   }
 
   nav a:hover {

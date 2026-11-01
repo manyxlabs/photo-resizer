@@ -1,7 +1,7 @@
 ---
 import Footer from '../../components/Footer.astro';
 import Header from '../../components/Header.astro';
-import { formSpecs, SPECS_CHECKED } from '../../data/formSpecs';
+import { CHECKED, exams, reportHref } from '../../data/formSpecs';
 import Base from '../../layouts/Base.astro';
 ---
 
@@ -34,7 +34,17 @@ import Base from '../../layouts/Base.astro';
         <label class="field">
           Form
           <select id="preset">
-            {formSpecs.map((s) => <option value={s.id}>{s.label}</option>)}
+            {
+              exams.map((exam) => (
+                <optgroup label={exam.name}>
+                  {exam.specs.map((s) => (
+                    <option value={s.id}>
+                      {exam.name}: {s.label}
+                    </option>
+                  ))}
+                </optgroup>
+              ))
+            }
             <option value="custom">Custom size (type it from your form's notice)</option>
           </select>
         </label>
@@ -56,7 +66,10 @@ import Base from '../../layouts/Base.astro';
         <p id="spec-error" class="error" role="alert" hidden></p>
         <p id="spec" class="hint"></p>
         <p class="hint">
-          Presets follow the official notices as of {SPECS_CHECKED}. Rules change, so check yours before you submit.
+          <span id="source">
+            Source: <a id="source-link" href=""></a>, checked {`${CHECKED.month} ${CHECKED.year}`}.{' '}
+          </span>
+          Rules change, so check yours before you submit. <a id="report" href={reportHref()}>Spec wrong or changed?</a>
         </p>
       </section>
 
@@ -77,6 +90,21 @@ import Base from '../../layouts/Base.astro';
         </div>
       </section>
     </form>
+
+    <nav class="guides" aria-labelledby="guides-h">
+      <h2 id="guides-h">Size guides</h2>
+      <ul>
+        {
+          exams.map((exam) => (
+            <li>
+              <a href={`/photo-size/${exam.id}/`}>
+                {exam.name} photo and signature size {CHECKED.year}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
   </main>
 
   <Footer />
@@ -84,7 +112,9 @@ import Base from '../../layouts/Base.astro';
 
 <script>
   import { fitJpeg, maxBytes, minBytes, withDpi } from '../../lib/jpeg';
-  import { formSpecs } from '../../data/formSpecs';
+  import { examOf, exams, kbRange, reportHref } from '../../data/formSpecs';
+
+  const formSpecs = exams.flatMap((e) => e.specs);
 
   type Target = {
     width: number;
@@ -96,6 +126,7 @@ import Base from '../../layouts/Base.astro';
     maxKB: number;
     dpi?: number;
     scan: boolean;
+    fileName?: string;
   };
 
   const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -106,6 +137,9 @@ import Base from '../../layouts/Base.astro';
   const custom = $<HTMLDivElement>('custom');
   const specError = $<HTMLParagraphElement>('spec-error');
   const specLine = $<HTMLParagraphElement>('spec');
+  const source = $<HTMLSpanElement>('source');
+  const sourceLink = $<HTMLAnchorElement>('source-link');
+  const report = $<HTMLAnchorElement>('report');
   const adjust = $<HTMLElement>('adjust');
   const canvas = $<HTMLCanvasElement>('canvas');
   const zoom = $<HTMLInputElement>('zoom');
@@ -129,8 +163,8 @@ import Base from '../../layouts/Base.astro';
   function readTarget(): Target | string {
     const spec = formSpecs.find((s) => s.id === preset.value);
     if (spec) {
-      const { width, height, minKB, maxKB, scan } = spec;
-      return { width, height, min: minBytes(minKB), max: maxBytes(maxKB), minKB, maxKB, scan };
+      const { width, height, minKB, maxKB, scan, fileName } = spec;
+      return { width, height, min: minBytes(minKB), max: maxBytes(maxKB), minKB, maxKB, dpi: spec.physical?.dpi, scan, fileName };
     }
     const cm = $<HTMLSelectElement>('unit').value === 'cm';
     const dpi = num('dpi');
@@ -208,7 +242,7 @@ import Base from '../../layouts/Base.astro';
     URL.revokeObjectURL(url);
     url = URL.createObjectURL(new Blob([fit.jpeg as BlobPart], { type: 'image/jpeg' }));
     download.href = url;
-    download.download = `${preset.value === 'custom' ? 'image' : preset.value}-${width}x${height}.jpg`;
+    download.download = target.fileName ? `${target.fileName}.jpg` : `${preset.value === 'custom' ? 'image' : preset.value}-${width}x${height}.jpg`;
     download.hidden = false;
     result.textContent =
       `${width} × ${height} px · ${kb(fit.jpeg.length)} · JPG` +
@@ -225,6 +259,14 @@ import Base from '../../layouts/Base.astro';
 
   function applyTarget() {
     custom.hidden = preset.value !== 'custom';
+    const spec = formSpecs.find((s) => s.id === preset.value);
+    source.hidden = !spec;
+    if (spec) {
+      const { source: from } = examOf(spec);
+      sourceLink.href = from.url;
+      sourceLink.textContent = from.label;
+    }
+    report.href = reportHref(spec);
     const t = readTarget();
     if (typeof t === 'string') {
       show(specError, t);
@@ -234,7 +276,9 @@ import Base from '../../layouts/Base.astro';
       return;
     }
     show(specError, '');
-    specLine.textContent = `Output: ${t.width} × ${t.height} px, ${t.minKB} to ${t.maxKB} KB, JPG.`;
+    const cm = spec?.physical ? ` (${spec.physical.w} × ${spec.physical.h} cm at ${spec.physical.dpi} DPI)` : '';
+    const name = t.fileName ? `, named ${t.fileName}.jpg` : '';
+    specLine.textContent = `Output: ${t.width} × ${t.height} px${cm}, ${kbRange(t)}, JPG${name}.`;
     const changedShape = !target || target.width !== t.width || target.height !== t.height;
     target = t;
     canvas.width = t.width;
@@ -313,6 +357,11 @@ import Base from '../../layouts/Base.astro';
     later();
   });
   $<HTMLFormElement>('tool').addEventListener('submit', (e) => e.preventDefault());
+
+  // The size guides link here with ?preset=<id>.
+  const wanted = new URLSearchParams(location.search).get('preset');
+  if (wanted && formSpecs.some((s) => s.id === wanted)) preset.value = wanted;
+  applyTarget();
 </script>
 
 <style>
@@ -481,6 +530,23 @@ import Base from '../../layouts/Base.astro';
     gap: 12px;
     align-items: center;
     justify-content: space-between;
+  }
+
+  .guides {
+    margin-top: 40px;
+  }
+
+  .guides ul {
+    display: grid;
+    gap: 6px;
+    margin: 10px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .guides a,
+  .hint a {
+    color: var(--accent);
   }
 
   .result p {

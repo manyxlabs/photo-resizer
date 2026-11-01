@@ -1,0 +1,167 @@
+---
+import Footer from '../../components/Footer.astro';
+import Header from '../../components/Header.astro';
+import { CHECKED, exams, kbRange, reportHref, type Exam } from '../../data/formSpecs';
+import Base from '../../layouts/Base.astro';
+
+export function getStaticPaths() {
+  return exams.map((exam) => ({ params: { exam: exam.id }, props: { exam } }));
+}
+
+const { exam } = Astro.props as { exam: Exam };
+// "Signature (three in one image)" reads as "signature" in a sentence.
+const noun = (label: string) => label.replace(/ \(.*\)$/, '').toLowerCase();
+const what = new Intl.ListFormat('en').format(exam.specs.map((s) => noun(s.label)));
+const title = `${exam.name} photo and signature size ${CHECKED.year}`;
+---
+
+<Base
+  title={`${title} - Manyx Labs`}
+  description={`The exact pixels, KB and format ${exam.name} asks for (${exam.covers}), from the official notice, and a free tool that resizes your ${what} to fit. Nothing is uploaded.`}
+>
+  <Header />
+
+  <main class="wrap">
+    <p class="eyebrow">Form size guide</p>
+    <h1>{title}</h1>
+    <p class="lede">
+      {`What ${exam.name} asks for (${exam.covers}), taken from the official notice and checked in ${CHECKED.month} ${CHECKED.year}.`}
+    </p>
+
+    {
+      exam.specs.map((spec) => (
+        <section class="spec" aria-labelledby={spec.id}>
+          <h2 id={spec.id}>{spec.label}</h2>
+          <dl>
+            <dt>Size</dt>
+            <dd>
+              {spec.width} × {spec.height} pixels
+              {spec.physical && ` (${spec.physical.w} × ${spec.physical.h} cm at ${spec.physical.dpi} DPI)`}
+            </dd>
+            <dt>File size</dt>
+            <dd>{kbRange(spec)}</dd>
+            <dt>Format</dt>
+            <dd>JPG{spec.fileName && `, named ${spec.fileName}.jpg`}</dd>
+          </dl>
+          <a class="btn primary" href={`/tools/photo-resizer/?preset=${spec.id}`}>
+            Resize my {noun(spec.label)} for {exam.name}
+          </a>
+        </section>
+      ))
+    }
+
+    <section aria-labelledby="notes">
+      <h2 id="notes">Good to know</h2>
+      <ul class="notes">
+        {exam.notes.map((note) => <li>{note}</li>)}
+      </ul>
+    </section>
+
+    <p class="source">
+      Source: <a href={exam.source.url}>{exam.source.label}</a>. Rules change between notices, so check the one
+      for your exam before you submit. <a href={reportHref(exam.specs[0])}>Spec wrong or changed?</a>
+    </p>
+
+    <p class="others">
+      Other forms:{' '}
+      {
+        exams
+          .filter((e) => e !== exam)
+          .map((e, i) => (
+            <>
+              {i > 0 && ' · '}
+              <a href={`/photo-size/${e.id}/`}>{e.name}</a>
+            </>
+          ))
+      }
+    </p>
+  </main>
+
+  <Footer />
+</Base>
+
+<style>
+  main {
+    max-width: 760px;
+    padding-block: 32px 64px;
+  }
+
+  .eyebrow {
+    color: var(--accent);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    margin-top: 8px;
+    font-size: clamp(1.75rem, 5vw, 2.5rem);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+  }
+
+  .lede {
+    margin-top: 8px;
+    color: var(--muted);
+  }
+
+  h2 {
+    font-size: 1.0625rem;
+    font-weight: 620;
+  }
+
+  .spec {
+    display: grid;
+    gap: 14px;
+    justify-items: start;
+    margin-top: 16px;
+    padding: 20px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--surface);
+  }
+
+  .spec:first-of-type {
+    margin-top: 32px;
+  }
+
+  dl {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 6px 16px;
+    margin: 0;
+  }
+
+  dt {
+    color: var(--muted);
+  }
+
+  dd {
+    margin: 0;
+    font-variant-numeric: tabular-nums;
+  }
+
+  section:not(.spec) {
+    margin-top: 40px;
+  }
+
+  .notes {
+    display: grid;
+    gap: 8px;
+    margin: 12px 0 0;
+    padding-left: 20px;
+  }
+
+  .source,
+  .others {
+    margin-top: 24px;
+    color: var(--muted);
+    font-size: 0.9375rem;
+  }
+
+  main a:not(.btn) {
+    color: var(--accent);
+  }
+</style>

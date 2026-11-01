@@ -108,6 +108,38 @@ const og = new URL('/og.png', Astro.site);
     border-radius: 4px;
   }
 
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding-inline: 20px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-size: 0.9375rem;
+    font-weight: 550;
+    text-decoration: none;
+    overflow-wrap: anywhere;
+  }
+
+  .btn:hover {
+    border-color: var(--muted);
+  }
+
+  .btn.primary {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--on-accent);
+  }
+
+  .btn.primary:hover {
+    filter: brightness(1.08);
+  }
+
+  /* Component display rules would otherwise override the hidden attribute. */
+  [hidden] {
+    display: none !important;
+  }
+
   .wrap {
     width: 100%;
     max-width: 1040px;

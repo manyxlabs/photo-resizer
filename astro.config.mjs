@@ -3,8 +3,9 @@ import sitemap from '@astrojs/sitemap';
 import { defineConfig } from 'astro/config';
 
 // Published as /build.txt so the IndexNow workflow can tell when a push is actually
-// live. Vercel and Cloudflare Pages each name the commit in their own variable.
-const commit = process.env.VERCEL_GIT_COMMIT_SHA ?? process.env.CF_PAGES_COMMIT_SHA ?? '';
+// live. Each host names the commit in its own variable: Cloudflare Workers Builds, then
+// Vercel, kept so a deploy from either still reports itself.
+const commit = process.env.WORKERS_CI_COMMIT_SHA ?? process.env.VERCEL_GIT_COMMIT_SHA ?? '';
 
 export default defineConfig({
   site: 'https://www.manyxlabs.com',

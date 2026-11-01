@@ -16,6 +16,7 @@ A tool marked `live` must have an `href`, and the type rejects one without it.
 Contact links live in `src/site.ts`.
 Form presets and the `/photo-size/` guides both come from `src/data/formSpecs.ts`, with each exam's official source.
 Search metadata (sitemap, `robots.txt`, schema.org data) is built from `src/seo.ts` and `astro.config.mjs`.
+Each push to `main` waits for the build to go live (`/build.txt` holds its commit), then submits the sitemap to IndexNow (`.github/workflows/indexnow.yml`, key in `public/indexnow-key.txt`).
 
 E2E runs leave every generated file and a screenshot per case in `test-results/artifacts/`.
 Where Playwright's own browser is unavailable, point it at a system one with `CHROMIUM=/usr/bin/chromium`.

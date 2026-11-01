@@ -173,6 +173,18 @@ test.describe('the tool', () => {
   });
 });
 
+test('a file picked before the page script has loaded is still opened', async ({ page }) => {
+  // A slow mobile connection: the page is usable well before its script arrives.
+  let release = () => {};
+  const held = new Promise<void>((r) => (release = r));
+  await page.route('**/_astro/*.js', async (route) => (await held, route.continue()));
+  // Module scripts hold back DOMContentLoaded, so only wait for the page to start arriving.
+  await page.goto('/tools/photo-resizer/', { waitUntil: 'commit' });
+  await page.locator('#file').setInputFiles('e2e/fixtures/portrait.webp');
+  release();
+  await expect(page.getByRole('link', { name: 'Download JPG' })).toBeVisible();
+});
+
 const GUIDES = ['ibps', 'ssc', 'upsc', 'pan', 'pan-utiitsl'];
 
 for (const exam of GUIDES) {

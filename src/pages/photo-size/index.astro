@@ -1,0 +1,105 @@
+---
+import Footer from '../../components/Footer.astro';
+import Header from '../../components/Header.astro';
+import { CHECKED, exams, kbRange } from '../../data/formSpecs';
+import Base from '../../layouts/Base.astro';
+import { breadcrumbs } from '../../seo';
+---
+
+<Base
+  title={`Photo and signature sizes for Indian forms ${CHECKED.year} - Manyx Labs`}
+  description={`The pixels, KB and format ${exams.map((e) => e.name.split(' (')[0]).join(', ')} ask for, taken from the official notices, with a free tool to resize your files.`}
+  schema={[
+    breadcrumbs([
+      ['Manyx Labs', '/'],
+      ['Size guides', '/photo-size/'],
+    ]),
+  ]}
+>
+  <Header />
+
+  <main class="wrap">
+    <h1>Photo and signature sizes for forms</h1>
+    <p class="lede">
+      {`Taken from each official notice and checked in ${CHECKED.month} ${CHECKED.year}.`}
+      <a href="/tools/photo-resizer/">The resizer</a> gets your file to fit.
+    </p>
+
+    <ul class="list">
+      {
+        exams.map((exam) => (
+          <li>
+            <a href={`/photo-size/${exam.id}/`}>
+              <h2>{exam.name}</h2>
+              <p>{exam.covers}</p>
+              <p class="specs">
+                {exam.specs.map((s) => `${s.label}: ${s.width} × ${s.height} px, ${kbRange(s)}`).join(' · ')}
+              </p>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </main>
+
+  <Footer />
+</Base>
+
+<style>
+  main {
+    max-width: 760px;
+    padding-block: 32px 64px;
+  }
+
+  h1 {
+    font-size: clamp(1.75rem, 5vw, 2.5rem);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+  }
+
+  .lede {
+    margin-top: 8px;
+    color: var(--muted);
+  }
+
+  .lede a {
+    color: var(--accent);
+  }
+
+  .list {
+    display: grid;
+    gap: 12px;
+    margin: 32px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .list a {
+    display: grid;
+    gap: 4px;
+    padding: 20px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--surface);
+    text-decoration: none;
+  }
+
+  .list a:hover {
+    border-color: var(--muted);
+  }
+
+  h2 {
+    font-size: 1.0625rem;
+    font-weight: 620;
+  }
+
+  .list p {
+    color: var(--muted);
+    font-size: 0.9375rem;
+  }
+
+  .specs {
+    font-variant-numeric: tabular-nums;
+  }
+</style>

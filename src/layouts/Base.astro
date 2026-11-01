@@ -4,9 +4,14 @@ import '@fontsource-variable/inter';
 interface Props {
   title: string;
   description: string;
+  /** schema.org objects, for search results. */
+  schema?: Record<string, unknown>[];
+  noindex?: boolean;
 }
 
-const { title, description } = Astro.props;
+const { title, description, schema = [], noindex = false } = Astro.props;
+// "</script>" inside a string would end the tag early.
+const ld = (o: Record<string, unknown>) => JSON.stringify({ '@context': 'https://schema.org', ...o }).replace(/</g, '\\u003c');
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const og = new URL('/og.png', Astro.site);
 ---
@@ -33,6 +38,8 @@ const og = new URL('/og.png', Astro.site);
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta name="twitter:card" content="summary_large_image" />
+    {noindex && <meta name="robots" content="noindex" />}
+    {schema.map((o) => <script type="application/ld+json" set:html={ld(o)} />)}
   </head>
   <body>
     <slot />

@@ -1,0 +1,55 @@
+<header class="wrap top">
+  <a href="/" class="brand" aria-label="Manyx Labs home">
+    <svg width="28" height="28" viewBox="0 0 48 48" aria-hidden="true">
+      <defs>
+        <mask id="mx" maskUnits="userSpaceOnUse" x="0" y="0" width="48" height="48">
+          <rect width="48" height="48" fill="#fff"></rect>
+          <circle cx="24" cy="24" r="9" fill="#000"></circle>
+        </mask>
+      </defs>
+      <g mask="url(#mx)" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round">
+        <path d="M9 9 C 22 20, 26 28, 39 39"></path>
+        <path d="M39 9 C 26 20, 22 28, 9 39"></path>
+      </g>
+      <circle cx="24" cy="24" r="5" fill="var(--accent)"></circle>
+    </svg>
+    Manyx Labs
+  </a>
+  <nav aria-label="Main">
+    <a href="/#tools">Tools</a>
+    <a href="/#teams">For teams</a>
+  </nav>
+</header>
+
+<style>
+  .top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-block: 20px;
+  }
+
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+    text-decoration: none;
+  }
+
+  nav {
+    display: flex;
+    gap: 20px;
+  }
+
+  nav a {
+    color: var(--muted);
+    font-size: 0.9375rem;
+    text-decoration: none;
+  }
+
+  nav a:hover {
+    color: var(--text);
+  }
+</style>

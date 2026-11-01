@@ -1,0 +1,42 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base title="Page not found - Manyx Labs" description="This page does not exist.">
+  <main class="wrap">
+    <p class="code">404</p>
+    <h1>This page doesn't exist.</h1>
+    <a href="/">Back to Manyx Labs &rarr;</a>
+  </main>
+</Base>
+
+<style>
+  main {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 16px;
+    min-height: 100svh;
+  }
+
+  .code {
+    color: var(--accent);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+  }
+
+  h1 {
+    font-size: clamp(1.75rem, 5vw, 2.5rem);
+    letter-spacing: -0.03em;
+  }
+
+  a {
+    color: var(--accent);
+    font-weight: 550;
+    text-decoration: none;
+  }
+
+  a:hover {
+    text-decoration: underline;
+  }
+</style>

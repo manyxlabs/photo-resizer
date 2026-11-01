@@ -38,19 +38,41 @@ export const exams: Exam[] = [
   {
     id: 'ibps',
     name: 'IBPS',
-    covers: 'PO, Clerk, SO and RRB',
+    covers: 'PO/MT, SO, Clerk (CSA) and RRB 2026',
     source: {
-      label: 'IBPS notifications, annexure on scanning and uploading documents',
-      url: 'https://www.ibps.in/',
+      label: 'IBPS CRP PO/MT-XVI notice (1 July 2026), Annexure III',
+      url: 'https://www.ibps.in/wp-content/uploads/Detailed-Notification_CRP-PO-XVI_Final_V1_30.06.2026.pdf',
     },
     notes: [
-      'The pixel sizes are the ones IBPS calls preferred. The KB ranges are hard limits.',
-      'The same sizes have applied across PO, Clerk, SO and RRB notifications.',
+      'The PO/MT, SO, CSA (Clerk) and RRB 2026 notices all give the same sizes. Pixel sizes are what IBPS calls preferred; the KB ranges are hard limits.',
+      'Photo: a recent colour passport-style picture on a light, preferably white, background. No caps, hats or dark glasses; religious headwear is fine if your face is uncovered. The form also takes a live photo.',
+      'Signature: black ink on white paper, and not in capital letters.',
+      'Left thumb: black or blue ink on white paper.',
+      'Declaration: in English, in black ink on white paper, not in capitals: "I, (your name), hereby declare that all the information submitted by me in the application form is correct, true and valid. I will present the supporting documents as and when required." The RRB notice says "submit" instead of "present".',
     ],
     specs: [
       { id: 'ibps-photo', label: 'Photo', width: 200, height: 230, minKB: 20, maxKB: 50, scan: false },
       { id: 'ibps-sign', label: 'Signature', width: 140, height: 60, minKB: 10, maxKB: 20, scan: true },
-      { id: 'ibps-thumb', label: 'Left thumb impression', width: 240, height: 240, minKB: 20, maxKB: 50, scan: true },
+      {
+        id: 'ibps-thumb',
+        label: 'Left thumb impression',
+        width: 240,
+        height: 240,
+        physical: { w: 3, h: 3, dpi: 200 },
+        minKB: 20,
+        maxKB: 50,
+        scan: true,
+      },
+      {
+        id: 'ibps-declaration',
+        label: 'Hand-written declaration',
+        width: 800,
+        height: 400,
+        physical: { w: 10, h: 5, dpi: 200 },
+        minKB: 50,
+        maxKB: 100,
+        scan: true,
+      },
     ],
   },
   {
@@ -98,11 +120,29 @@ export const exams: Exam[] = [
     notes: [
       'Protean states 200 DPI and sizes in cm; the preset writes 200 DPI into the file.',
       'The limits are those of the DSC route. Protean allows up to 50 KB on the e-Sign route, so these files pass both.',
-      'UTIITSL publishes no upload size we could confirm. For a UTIITSL form, pick Custom and type the numbers it shows.',
+      'Applying through UTIITSL instead? It has its own limits; see the UTIITSL guide.',
     ],
     specs: [
       { id: 'pan-photo', label: 'Photo', ...atCm(2.5, 3.5, 200), minKB: 0, maxKB: 20, scan: false },
       { id: 'pan-sign', label: 'Signature', ...atCm(4.5, 2, 200), minKB: 0, maxKB: 10, scan: true },
+    ],
+  },
+  {
+    id: 'pan-utiitsl',
+    name: 'PAN card (UTIITSL)',
+    covers: 'New PAN (Form 93) through UTIITSL',
+    source: {
+      label: "UTIITSL's online PAN form, which checks the file type and size",
+      url: 'https://www.pan.utiitsl.com/PAN/newA.html',
+    },
+    notes: [
+      "UTIITSL's form accepts JPG or PNG under 30 KB for the photo and under 60 KB for the signature, and checks nothing else.",
+      'It states no pixel size. The photo preset uses the 3.5\u00a0×\u00a04.5 cm its Form 93 instructions give for photos, and the signature uses the 4.5\u00a0×\u00a02 cm PAN signature size Protean states, both at 200 DPI.',
+      'Photos should be recent and in colour, on a white background.',
+    ],
+    specs: [
+      { id: 'pan-uti-photo', label: 'Photo', ...atCm(3.5, 4.5, 200), minKB: 0, maxKB: 30, scan: false },
+      { id: 'pan-uti-sign', label: 'Signature', ...atCm(4.5, 2, 200), minKB: 0, maxKB: 60, scan: true },
     ],
   },
 ];

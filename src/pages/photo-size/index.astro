@@ -8,7 +8,7 @@ import { breadcrumbs } from '../../seo';
 
 <Base
   title={`Photo and signature sizes for Indian forms ${CHECKED.year} - Manyx Labs`}
-  description={`The pixels, KB and format ${exams.map((e) => e.name.split(' (')[0]).join(', ')} ask for, taken from the official notices, with a free tool to resize your files.`}
+  description={`The pixels, KB and format ${[...new Set(exams.map((e) => e.name.split(' (')[0]))].join(', ')} ask for, taken from the official notices, with a free tool to resize your files.`}
   schema={[
     breadcrumbs([
       ['Manyx Labs', '/'],
@@ -21,7 +21,7 @@ import { breadcrumbs } from '../../seo';
   <main class="wrap">
     <h1>Photo and signature sizes for forms</h1>
     <p class="lede">
-      {`Taken from each official notice and checked in ${CHECKED.month} ${CHECKED.year}.`}
+      {`Taken from each official notice and checked in ${CHECKED.month} ${CHECKED.year}.`}{' '}
       <a href="/tools/photo-resizer/">The resizer</a> gets your file to fit.
     </p>
 
@@ -32,9 +32,11 @@ import { breadcrumbs } from '../../seo';
             <a href={`/photo-size/${exam.id}/`}>
               <h2>{exam.name}</h2>
               <p>{exam.covers}</p>
-              <p class="specs">
-                {exam.specs.map((s) => `${s.label}: ${s.width} × ${s.height} px, ${kbRange(s)}`).join(' · ')}
-              </p>
+              <ul class="specs">
+                {exam.specs.map((s) => (
+                  <li>{`${s.label}: ${s.width} × ${s.height} px, ${kbRange(s)}`}</li>
+                ))}
+              </ul>
             </a>
           </li>
         ))
@@ -94,12 +96,16 @@ import { breadcrumbs } from '../../seo';
     font-weight: 620;
   }
 
-  .list p {
+  .list p,
+  .specs {
     color: var(--muted);
     font-size: 0.9375rem;
   }
 
   .specs {
+    margin: 4px 0 0;
+    padding: 0;
+    list-style: none;
     font-variant-numeric: tabular-nums;
   }
 </style>

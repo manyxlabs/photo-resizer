@@ -1,0 +1,10 @@
+// Cloudflare Workers serves the built site as static assets; there is no Worker code.
+{
+  "name": "website",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "404-page",
+    "html_handling": "auto-trailing-slash"
+  }
+}

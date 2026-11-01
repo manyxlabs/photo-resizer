@@ -4,9 +4,10 @@ export default defineConfig({
   testDir: 'e2e',
   outputDir: 'test-results/playwright',
   use: {
-    baseURL: 'http://localhost:4330',
+    baseURL: process.env.BASE_URL ?? 'http://localhost:4330',
     // Set CHROMIUM to a system browser where Playwright's own download is unavailable.
     launchOptions: { executablePath: process.env.CHROMIUM || undefined },
   },
-  webServer: { command: 'npm run build && npx astro preview --port 4330 --ignore-lock', port: 4330, reuseExistingServer: false },
+  // BASE_URL runs the suite against a deployed site instead, e.g. a new host before DNS moves.
+  webServer: process.env.BASE_URL ? undefined : { command: 'npm run build && npx astro preview --port 4330 --ignore-lock', port: 4330, reuseExistingServer: false },
 });

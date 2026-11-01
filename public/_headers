@@ -1,4 +1,4 @@
-# Cloudflare Pages response headers.
+# Response headers, applied by Cloudflare to the static assets.
 
 # Astro fingerprints these file names, so a changed file always gets a new URL.
 /_astro/*
@@ -7,7 +7,3 @@
 /*
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
-
-# The pages.dev address serves the same site; only www.manyxlabs.com should be indexed.
-https://:project.pages.dev/*
-  X-Robots-Tag: noindex

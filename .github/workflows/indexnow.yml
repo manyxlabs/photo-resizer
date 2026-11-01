@@ -1,0 +1,30 @@
+# Tells Bing, Yandex and the other IndexNow engines about every page once a push is live,
+# so new pages are crawled within hours rather than whenever the crawler comes round.
+name: IndexNow
+
+on:
+  push:
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SITE: https://www.manyxlabs.com
+    steps:
+      - name: Wait until this commit is live
+        run: until [ "$(curl -fsS "$SITE/build.txt")" = "$GITHUB_SHA" ]; do sleep 15; done
+
+      - name: Submit every sitemap URL
+        run: |
+          locs() { curl -fsS "$1" | grep -o '<loc>[^<]*' | sed 's/<loc>//'; }
+          urls=$(for map in $(locs "$SITE/sitemap-index.xml"); do locs "$map"; done)
+          key=$(curl -fsS "$SITE/indexnow-key.txt")
+          jq -n --arg key "$key" --arg site "$SITE" --arg urls "$urls" \
+            '{host: ($site | sub("^https://"; "")), key: $key, keyLocation: "\($site)/indexnow-key.txt", urlList: ($urls | split("\n"))}' \
+            | curl -sS --fail-with-body -X POST https://api.indexnow.org/indexnow \
+                -H 'Content-Type: application/json; charset=utf-8' --data @- -w '%{http_code}\n'
+          echo "Submitted $(echo "$urls" | wc -l) URLs"

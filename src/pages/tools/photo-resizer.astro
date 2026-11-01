@@ -392,6 +392,8 @@ import Base from '../../layouts/Base.astro';
   const wanted = new URLSearchParams(location.search).get('preset');
   if (wanted && formSpecs.some((s) => s.id === wanted)) preset.value = wanted;
   applyTarget();
+  // On a slow connection a file can be picked before this script has loaded and started listening.
+  load(fileInput.files?.[0]);
 </script>
 
 <style>

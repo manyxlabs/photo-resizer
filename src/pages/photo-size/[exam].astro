@@ -3,6 +3,7 @@ import Footer from '../../components/Footer.astro';
 import Header from '../../components/Header.astro';
 import { CHECKED, exams, kbRange, reportHref, type Exam } from '../../data/formSpecs';
 import Base from '../../layouts/Base.astro';
+import { breadcrumbs } from '../../seo';
 
 export function getStaticPaths() {
   return exams.map((exam) => ({ params: { exam: exam.id }, props: { exam } }));
@@ -18,6 +19,13 @@ const title = `${exam.name} photo and signature size ${CHECKED.year}`;
 <Base
   title={`${title} - Manyx Labs`}
   description={`The exact pixels, KB and format ${exam.name} asks for (${exam.covers}), from the official notice, and a free tool that resizes your ${what} to fit. Nothing is uploaded.`}
+  schema={[
+    breadcrumbs([
+      ['Manyx Labs', '/'],
+      ['Size guides', '/photo-size/'],
+      [title, `/photo-size/${exam.id}/`],
+    ]),
+  ]}
 >
   <Header />
 

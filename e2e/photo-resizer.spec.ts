@@ -63,6 +63,21 @@ async function decode(page: Page, bytes: Buffer) {
   }, bytes.toString('base64'));
 }
 
+/** The output's centre pixel and how many of its pixels are dark, to prove the picture survived the trip. */
+async function inspect(page: Page, bytes: Buffer) {
+  return page.evaluate(async (b64) => {
+    const bin = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+    const img = await createImageBitmap(new Blob([bin], { type: 'image/jpeg' }));
+    const g = new OffscreenCanvas(img.width, img.height).getContext('2d')!;
+    g.drawImage(img, 0, 0);
+    const d = g.getImageData(0, 0, img.width, img.height).data;
+    const at = (Math.floor(img.height / 2) * img.width + Math.floor(img.width / 2)) * 4;
+    let dark = 0;
+    for (let i = 0; i < d.length; i += 4) if (d[i]! + d[i + 1]! + d[i + 2]! < 150) dark++;
+    return { centre: [d[at], d[at + 1], d[at + 2]], dark };
+  }, bytes.toString('base64'));
+}
+
 const jfifDpi = (b: Buffer) => (b.toString('latin1', 6, 10) === 'JFIF' && b[13] === 1 ? b.readUInt16BE(14) : null);
 
 test.describe('the tool', () => {
@@ -119,6 +134,30 @@ test.describe('the tool', () => {
     await expect(page.locator('#spec-error')).toHaveText('Min KB must be smaller than max KB.');
     await expect(page.getByRole('link', { name: 'Download JPG' })).toBeHidden();
   });
+
+  // Fixtures made with ImageMagick: a skin-toned oval on a blue gradient, and black ink on paper.
+  for (const [file, presetId] of [
+    ['portrait.heic', 'ibps-photo'],
+    ['portrait.webp', 'ibps-photo'],
+    ['portrait.avif', 'ibps-photo'],
+    ['scan.tif', 'ibps-sign'],
+  ] as const) {
+    test(`a ${file.split('.')[1]!.toUpperCase()} file comes out as a JPG of the same picture`, async ({ page }) => {
+      await page.locator('#preset').selectOption(presetId);
+      await page.locator('#file').setInputFiles(`e2e/fixtures/${file}`);
+      const { bytes } = await download(page, `from-${file.replace('.', '-')}`);
+      expect(bytes.subarray(0, 2)).toEqual(Buffer.from([0xff, 0xd8]));
+      const { centre, dark } = await inspect(page, bytes);
+      if (presetId === 'ibps-photo') {
+        // #c68e6a, give or take JPEG and the two lossy source encodings.
+        for (const [got, want] of centre.map((v, i) => [v!, [0xc6, 0x8e, 0x6a][i]!])) expect(Math.abs(got - want)).toBeLessThan(24);
+      } else {
+        // Ink, but not a black frame: at 140 × 60 the word covers a few dozen pixels.
+        expect(dark).toBeGreaterThan(20);
+        expect(dark).toBeLessThan(140 * 60 * 0.3);
+      }
+    });
+  }
 
   test('a file that is not an image gets a clear message', async ({ page }) => {
     await page.locator('#file').setInputFiles({ name: 'notes.txt', mimeType: 'text/plain', buffer: Buffer.from('hello') });

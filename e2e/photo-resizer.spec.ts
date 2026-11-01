@@ -173,7 +173,7 @@ test.describe('the tool', () => {
   });
 });
 
-const GUIDES = ['ibps', 'ssc', 'upsc', 'pan'];
+const GUIDES = ['ibps', 'ssc', 'upsc', 'pan', 'pan-utiitsl'];
 
 for (const exam of GUIDES) {
   test(`every ${exam} guide button gives a file that matches the guide`, async ({ page }) => {
@@ -190,7 +190,7 @@ for (const exam of GUIDES) {
       const kb = /(?:(\d+) to )?(\d+) KB/.exec(await dd.nth(1).innerText())!;
       const named = /named (\S+\.jpg)/.exec(await dd.nth(2).innerText());
 
-      await spec.getByRole('link', { name: /^Resize my/ }).click();
+      await spec.getByRole('link', { name: 'Open in the resizer' }).click();
       await expect(page).toHaveURL(/\/tools\/photo-resizer\/\?preset=/);
       const scan = !/photo/i.test(label);
       await page.locator('#file').setInputFiles(await makeImage(page, scan ? 'flat' : 'portrait', 1500, 1500));

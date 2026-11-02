@@ -1,5 +1,7 @@
 ---
 import { EMAIL, FOUNDER, GITHUB } from '../site';
+
+const REPO = `${GITHUB}/photo-resizer`;
 ---
 
 <footer class="wrap">
@@ -7,7 +9,9 @@ import { EMAIL, FOUNDER, GITHUB } from '../site';
     <p>&copy; {new Date().getFullYear()} Manyx Labs, Bengaluru</p>
     <nav aria-label="Elsewhere">
       <a href="/photo-size/">Size guides</a>
-      <a href={GITHUB}>GitHub</a>
+      <a href={REPO} target="_blank" rel="noopener">Source</a>
+      <a href={`${REPO}/issues/new`} target="_blank" rel="noopener">Report an issue</a>
+      <a href={`${REPO}/blob/main/CONTRIBUTING.md`} target="_blank" rel="noopener">Contribute</a>
       <a href={FOUNDER}>Founder</a>
       <a href={`mailto:${EMAIL}`}>Email</a>
     </nav>
@@ -28,7 +32,8 @@ import { EMAIL, FOUNDER, GITHUB } from '../site';
 
   nav {
     display: flex;
-    gap: 20px;
+    flex-wrap: wrap;
+    gap: 8px 20px;
   }
 
   nav a {

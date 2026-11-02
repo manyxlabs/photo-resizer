@@ -36,7 +36,7 @@ import Base from '../../layouts/Base.astro';
     </p>
 
     <form id="tool" class="tool" novalidate>
-      <section class="panel">
+      <section class="panel glass">
         <h2><span>1</span> Pick a photo or scan</h2>
         <label class="drop" id="drop">
           <input id="file" type="file" accept="image/*,.heic,.heif,.tif,.tiff" />
@@ -47,7 +47,7 @@ import Base from '../../layouts/Base.astro';
         <p id="file-error" class="error" role="alert" hidden></p>
       </section>
 
-      <section class="panel">
+      <section class="panel glass">
         <h2><span>2</span> What does your form ask for?</h2>
         <label class="field">
           Form
@@ -91,7 +91,7 @@ import Base from '../../layouts/Base.astro';
         </p>
       </section>
 
-      <section class="panel" id="adjust" hidden>
+      <section class="panel glass" id="adjust" hidden>
         <h2><span>3</span> Adjust and download</h2>
         <div class="stage">
           <canvas id="canvas" tabindex="0" aria-label="Preview. Drag or use arrow keys to move the image."></canvas>
@@ -423,9 +423,7 @@ import Base from '../../layouts/Base.astro';
     display: grid;
     gap: 14px;
     padding: 20px;
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    background: var(--surface);
+    border-radius: 20px;
   }
 
   h2 {

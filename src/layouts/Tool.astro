@@ -1,0 +1,150 @@
+---
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import { toolAt, tools } from '../data/tools';
+import { breadcrumbs, organization } from '../seo';
+import Base from './Base.astro';
+
+interface Props {
+  /** The page's key in src/data/tools.ts, which also names it in breadcrumbs and "More tools". */
+  path: string;
+  title: string;
+  description: string;
+  heading: string;
+  applicationCategory?: string;
+  /** Questions people search for, answered in plain text; shown on the page and marked up as an FAQ. */
+  faq?: [question: string, answer: string][];
+  /** For a variant of a tool (e.g. a fixed KB target), the URL it adds; breadcrumbs then go through the tool. */
+  variant?: { path: string; name: string };
+}
+
+const { path, title, description, heading, applicationCategory = 'UtilitiesApplication', faq = [], variant } = Astro.props;
+const tool = toolAt(path);
+---
+
+<Base
+  title={title}
+  description={description}
+  schema={[
+    {
+      '@type': 'WebApplication',
+      name: tool.name,
+      url: new URL(variant?.path ?? path, Astro.site).href,
+      applicationCategory,
+      operatingSystem: 'Any',
+      browserRequirements: 'Requires JavaScript',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'INR' },
+      publisher: { '@id': organization['@id'] },
+    },
+    breadcrumbs([['Manyx Labs', '/'], ['Tools', '/tools/'], [tool.name, path], ...(variant ? [[variant.name, variant.path] as [string, string]] : [])]),
+    ...(faq.length
+      ? [
+          {
+            '@type': 'FAQPage',
+            mainEntity: faq.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })),
+          },
+        ]
+      : []),
+  ]}
+>
+  <Header />
+
+  <main class="wrap tool-page">
+    <h1>{heading}</h1>
+    <p class="lede"><slot name="lede" /></p>
+    <slot />
+
+    {
+      faq.length > 0 && (
+        <section class="faq" aria-labelledby="faq-h">
+          <h2 id="faq-h">Questions</h2>
+          {faq.map(([q, a]) => (
+            <details>
+              <summary>{q}</summary>
+              <p>{a}</p>
+            </details>
+          ))}
+        </section>
+      )
+    }
+
+    <nav class="more" aria-labelledby="more-h">
+      <h2 id="more-h">More free tools</h2>
+      <ul>
+        {
+          tools
+            .filter((t) => t !== tool)
+            .map((t) => (
+              <li>
+                <a href={t.path}>{t.name}</a>
+              </li>
+            ))
+        }
+      </ul>
+    </nav>
+  </main>
+
+  <Footer />
+</Base>
+
+<style>
+  main {
+    max-width: 760px;
+    padding-block: 32px 64px;
+  }
+
+  h1 {
+    font-size: clamp(1.75rem, 5vw, 2.5rem);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+  }
+
+  .lede {
+    margin-top: 8px;
+    color: var(--muted);
+  }
+
+  .more,
+  .faq {
+    margin-top: 40px;
+  }
+
+  .faq {
+    display: grid;
+    gap: 8px;
+  }
+
+  details {
+    border-bottom: 1px solid var(--border);
+    padding-block: 10px;
+  }
+
+  summary {
+    font-weight: 550;
+    cursor: pointer;
+  }
+
+  details p {
+    margin-top: 6px;
+    color: var(--muted);
+  }
+
+  :is(.more, .faq) h2 {
+    font-size: 1.0625rem;
+    font-weight: 620;
+  }
+
+  .more ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+    margin: 10px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .more a {
+    color: var(--accent);
+  }
+</style>

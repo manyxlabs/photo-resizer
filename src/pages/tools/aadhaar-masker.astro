@@ -1,0 +1,435 @@
+---
+import Explainer from '../../components/Explainer.astro';
+import Tool from '../../layouts/Tool.astro';
+---
+
+<Tool
+  path="/tools/aadhaar-masker/"
+  title="Mask Aadhaar Number Online (hide first 8 digits) - free, no upload"
+  description="Hide the first 8 digits of your Aadhaar number, or anything else on an ID, before you share a copy. Works on photos, scans and e-Aadhaar PDFs. Free, and nothing is uploaded."
+  heading="Aadhaar masker"
+  faq={[
+    [
+      'What is a masked Aadhaar?',
+      'A copy of your Aadhaar where the first 8 digits of the number are replaced, for example with X, and only the last 4 digits can be read. UIDAI offers it as an option when you download your e-Aadhaar.',
+    ],
+    [
+      'Is a masked Aadhaar valid for KYC?',
+      'UIDAI issues masked e-Aadhaar itself, but whether a masked copy is enough is up to the organisation asking. Some services need your full number to verify it. If you are not sure, ask them before you send a copy.',
+    ],
+    [
+      'Is my Aadhaar uploaded anywhere?',
+      'No. The file is opened, read and masked in your browser, and never leaves your device. The text recognition that finds the number also runs on your device.',
+    ],
+    [
+      'Can I mask a PAN card or other ID too?',
+      'Yes. Drag over anything you want hidden on a PAN card, passport, voter ID, driving licence or bank statement. Only Aadhaar numbers are found automatically.',
+    ],
+    [
+      'Why does my PDF come back as images?',
+      'A black box drawn on top of a PDF leaves the text underneath, where anyone can copy it out. Turning each page into an image with the box burned in removes the hidden text for good.',
+    ],
+  ]}
+>
+  <Fragment slot="lede">
+    Hide the first 8 digits of your Aadhaar number, or anything else, before you share a copy. It all happens on
+    your device; nothing is uploaded.
+  </Fragment>
+
+  <form id="tool" class="tool" novalidate>
+    <section class="panel glass">
+      <h2><span>1</span> Pick your Aadhaar or other ID</h2>
+      <label class="drop" id="drop">
+        <input id="file" type="file" accept="image/*,.heic,.heif,.tif,.tiff,application/pdf,.pdf" />
+        <strong>Choose a photo, scan or PDF</strong>
+        <span>or drop it here. JPG, PNG, WebP, HEIC (iPhone), AVIF, TIFF, GIF, BMP or PDF.</span>
+      </label>
+      <p id="file-status" class="hint" aria-live="polite" hidden></p>
+      <p id="file-error" class="error" role="alert" hidden></p>
+    </section>
+
+    <section class="panel glass" id="edit" hidden>
+      <h2><span>2</span> Check what's hidden</h2>
+      <p id="detect" aria-live="polite"></p>
+      <div class="stage" id="pages"></div>
+      <div class="result">
+        <p class="hint">Drag over anything else to hide it. Tap a box to remove it.</p>
+        <div class="actions">
+          <button id="undo" class="btn" type="button" disabled>Undo</button>
+          <button id="clear" class="btn" type="button" disabled>Clear</button>
+        </div>
+      </div>
+      <p class="hint">
+        Older Aadhaar letters and cards have a QR code that holds the full number. If yours predates UIDAI's Secure
+        QR code, or you aren't sure, drag a box over the QR code too.
+      </p>
+    </section>
+
+    <section class="panel glass" id="finish" hidden>
+      <h2><span>3</span> Add a note and download</h2>
+      <label class="field">
+        Add a note across the copy (optional)
+        <input id="note" type="text" maxlength="80" placeholder="For KYC with ABC Bank only, 2 Nov 2026" />
+      </label>
+      <p class="hint">
+        Write who the copy is for and today's date, so it can't easily be reused for anything else.
+      </p>
+      <p id="pdf-hint" class="hint" hidden>
+        Each page comes back as a picture. A box drawn over a PDF in an editor leaves the text underneath it, where
+        anyone can copy it out; turning the page into a picture removes it.
+      </p>
+      <div class="result">
+        <p id="result" aria-live="polite"></p>
+        <a id="download" class="btn primary" download hidden>Download</a>
+      </div>
+    </section>
+  </form>
+
+  <Explainer title="What is masked Aadhaar?">
+    <li>
+      UIDAI, which issues Aadhaar, <a
+        href="https://www.uidai.gov.in/283-faqs/aadhaar-online-services/e-aadhaar/1887-what-is-masked-aadhaar.html"
+        >defines masked Aadhaar</a
+      > as a copy where the first 8 digits of the number are replaced and only the last 4 stay visible. A hotel, a
+      landlord or a bank can still tell which Aadhaar it is, but whoever gets hold of the copy doesn't have your full
+      number. If you have an e-Aadhaar, you can also download a masked one from myAadhaar.
+    </li>
+    <li>
+      Nothing is uploaded. Your file is opened, read and masked in your browser, and the text recognition that finds
+      the number runs on your device too.
+    </li>
+    <li>
+      A PDF comes back as pictures of its pages. Drawing a black box over a PDF in most editors only adds a shape on
+      top: the number is still in the file as text, and copying it gets it back. Here every page becomes a picture
+      with the box burned in, put back together at its original size, so there is no text left to copy.
+    </li>
+    <li>
+      It works on any ID: PAN, passport, voter ID, driving licence or a bank statement. Automatic detection only looks
+      for Aadhaar numbers, so on anything else, drag over what you want hidden.
+    </li>
+  </Explainer>
+</Tool>
+
+<script>
+  import { findAadhaar, type Box } from '../../lib/aadhaar';
+  import { openImage } from '../../lib/decode';
+  import { isPdf, openPdf, PdfPasswordError, renderPage } from '../../lib/pdf';
+
+  /** One page of the file; width and height are in PDF points, so the output keeps the original page size. */
+  type Page = { source: HTMLCanvasElement; view: HTMLCanvasElement; width: number; height: number };
+  type Mask = Box & { page: number };
+  type Ctx = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
+
+  const DPI = 200;
+  const MAX_PAGES = 10;
+
+  const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+  const fileInput = $<HTMLInputElement>('file');
+  const drop = $<HTMLLabelElement>('drop');
+  const fileError = $<HTMLParagraphElement>('file-error');
+  const fileStatus = $<HTMLParagraphElement>('file-status');
+  const edit = $<HTMLElement>('edit');
+  const finish = $<HTMLElement>('finish');
+  const detect = $<HTMLParagraphElement>('detect');
+  const stage = $<HTMLDivElement>('pages');
+  const undo = $<HTMLButtonElement>('undo');
+  const clear = $<HTMLButtonElement>('clear');
+  const note = $<HTMLInputElement>('note');
+  const pdfHint = $<HTMLParagraphElement>('pdf-hint');
+  const result = $<HTMLParagraphElement>('result');
+  const download = $<HTMLAnchorElement>('download');
+
+  let file: { stem: string; pdf: boolean; pages: Page[] } | null = null;
+  let masks: Mask[] = [];
+  let history: Mask[][] = [];
+  let url = '';
+  let job = 0;
+
+  function show(el: HTMLElement, text: string) {
+    el.textContent = text;
+    el.hidden = !text;
+  }
+
+  function paint(ctx: Ctx, i: number, draft?: Box) {
+    const { source } = file!.pages[i]!;
+    const { width: w, height: h } = source;
+    ctx.drawImage(source, 0, 0);
+    ctx.fillStyle = '#000';
+    for (const m of masks) if (m.page === i) ctx.fillRect(m.x, m.y, m.w, m.h);
+    const text = note.value.trim();
+    if (text) {
+      ctx.save();
+      ctx.translate(w / 2, h / 2);
+      ctx.rotate(-Math.atan2(h, w));
+      const diagonal = Math.hypot(w, h);
+      ctx.font = `600 100px system-ui, sans-serif`;
+      // Long notes shrink to fit the diagonal; short ones stop at a size that still reads as a note.
+      const size = Math.min(diagonal / 14, (100 * diagonal * 0.8) / ctx.measureText(text).width);
+      ctx.font = `600 ${size}px system-ui, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = 'rgb(185 28 28 / 0.45)';
+      ctx.fillText(text, 0, 0);
+      ctx.restore();
+    }
+    if (draft) {
+      ctx.fillStyle = 'rgb(0 0 0 / 0.6)';
+      ctx.fillRect(draft.x, draft.y, draft.w, draft.h);
+    }
+  }
+
+  const redraw = (i: number, draft?: Box) => paint(file!.pages[i]!.view.getContext('2d')!, i, draft);
+
+  const kb = (bytes: number) => (bytes < 1024 * 1024 ? `${Math.round(bytes / 1024)} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`);
+
+  async function render() {
+    const mine = ++job;
+    download.hidden = true;
+    if (!file) return;
+    const { pages, pdf, stem } = file;
+    result.textContent = 'Making your copy…';
+    // Painted afresh, so a box being dragged on the preview never ends up in the file.
+    const jpegs: Blob[] = [];
+    for (let i = 0; i < pages.length; i++) {
+      const c = new OffscreenCanvas(pages[i]!.source.width, pages[i]!.source.height);
+      paint(c.getContext('2d')!, i);
+      jpegs.push(await c.convertToBlob({ type: 'image/jpeg', quality: 0.92 }));
+      if (mine !== job) return;
+    }
+    let out = jpegs[0]!;
+    if (pdf) {
+      const { PDFDocument } = await import('pdf-lib');
+      const doc = await PDFDocument.create();
+      for (let i = 0; i < pages.length; i++) {
+        const img = await doc.embedJpg(await jpegs[i]!.arrayBuffer());
+        const { width, height } = pages[i]!;
+        doc.addPage([width, height]).drawImage(img, { x: 0, y: 0, width, height });
+      }
+      out = new Blob([(await doc.save()) as BlobPart], { type: 'application/pdf' });
+      if (mine !== job) return;
+    }
+    URL.revokeObjectURL(url);
+    url = URL.createObjectURL(out);
+    download.href = url;
+    download.download = `${stem}-masked.${pdf ? 'pdf' : 'jpg'}`;
+    download.textContent = `Download ${pdf ? 'PDF' : 'JPG'}`;
+    download.hidden = false;
+    const hidden = masks.length === 1 ? '1 area hidden' : `${masks.length} areas hidden`;
+    const size = pdf ? `${pages.length} ${pages.length === 1 ? 'page' : 'pages'}` : `${pages[0]!.source.width} × ${pages[0]!.source.height} px`;
+    result.textContent = `${size} · ${hidden} · ${kb(out.size)} · ${pdf ? 'PDF' : 'JPG'}`;
+  }
+
+  let timer = 0;
+  const later = () => {
+    download.hidden = true;
+    clearTimeout(timer);
+    timer = window.setTimeout(render, 250);
+  };
+
+  function commit(next: Mask[]) {
+    history.push(masks);
+    masks = next;
+    undo.disabled = false;
+    clear.disabled = !masks.length;
+    file!.pages.forEach((_, i) => redraw(i));
+    later();
+  }
+
+  async function findAll(mine: number) {
+    const { pages } = file!;
+    const found: Mask[] = [];
+    try {
+      for (let i = 0; i < pages.length; i++) {
+        detect.textContent =
+          pages.length > 1 ? `Looking for the Aadhaar number on page ${i + 1} of ${pages.length}…` : 'Looking for the Aadhaar number…';
+        found.push(...(await findAadhaar(pages[i]!.source)).map((b) => ({ ...b, page: i })));
+        if (mine !== opening) return;
+      }
+    } catch {
+      if (mine === opening) detect.textContent = "Automatic detection didn't load. Drag over the number to hide it yourself.";
+      return;
+    }
+    if (!found.length) {
+      detect.textContent = "Couldn't find an Aadhaar number. Drag over it to hide it yourself.";
+      return;
+    }
+    detect.textContent = `Found the Aadhaar number in ${found.length === 1 ? 'one place' : `${found.length} places`} and hid its first 8 digits. Check the preview below.`;
+    commit([...masks, ...found]);
+  }
+
+  const canvasOf = (bitmap: ImageBitmap) => {
+    const c = document.createElement('canvas');
+    c.width = bitmap.width;
+    c.height = bitmap.height;
+    c.getContext('2d')!.drawImage(bitmap, 0, 0);
+    bitmap.close();
+    return c;
+  };
+
+  /** The pages, a message saying why the file can't be used, or null once a newer file has been picked. */
+  async function readPages(picked: File, pdf: boolean, mine: number): Promise<Omit<Page, 'view'>[] | string | null> {
+    if (!pdf) {
+      const source = canvasOf(await openImage(picked));
+      return [{ source, width: source.width, height: source.height }];
+    }
+    const doc = await openPdf(picked);
+    try {
+      if (doc.numPages > MAX_PAGES)
+        return `"${picked.name}" has ${doc.numPages} pages; this tool takes up to ${MAX_PAGES}. Save just the pages with your ID as a new PDF, then pick that.`;
+      const pages = [];
+      for (let n = 1; n <= doc.numPages; n++) {
+        show(fileStatus, `Opening page ${n} of ${doc.numPages}…`);
+        const { canvas, width, height } = await renderPage(doc, n, DPI);
+        if (mine !== opening) return null;
+        pages.push({ source: canvas, width, height });
+      }
+      return pages;
+    } finally {
+      doc.loadingTask.destroy();
+    }
+  }
+
+  let opening = 0;
+  async function load(picked: File | undefined) {
+    if (!picked) return;
+    const mine = ++opening;
+    show(fileError, '');
+    show(fileStatus, `Opening "${picked.name}"…`);
+    let pdf = false;
+    let pages: Awaited<ReturnType<typeof readPages>>;
+    try {
+      pdf = await isPdf(picked);
+      pages = await readPages(picked, pdf, mine);
+    } catch (err) {
+      pages =
+        err instanceof PdfPasswordError
+          ? `"${picked.name}" is locked with a password, as e-Aadhaar PDFs are. Open it in your PDF viewer, then print or save it as a PDF without the password, or take a screenshot, and pick that here.`
+          : `Couldn't open "${picked.name}". Pick a photo, scan or PDF of your ID: JPG, PNG, WebP, HEIC, AVIF, TIFF, GIF, BMP or PDF.`;
+    }
+    // A slow PDF or HEIC must not land on top of a file picked after it.
+    if (!pages || mine !== opening) return;
+    show(fileStatus, '');
+    if (typeof pages === 'string') return show(fileError, pages);
+    stage.replaceChildren();
+    file = {
+      stem: picked.name.replace(/\.[^.]+$/, '') || 'id',
+      pdf,
+      pages: pages.map((p, i) => {
+        const view = document.createElement('canvas');
+        view.width = p.source.width;
+        view.height = p.source.height;
+        view.style.setProperty('--ratio', String(view.width / view.height));
+        view.tabIndex = 0;
+        view.setAttribute('aria-label', `Page ${i + 1}. Drag to hide an area; tap a box to remove it.`);
+        listen(view, i);
+        stage.append(view);
+        return { ...p, view };
+      }),
+    };
+    masks = [];
+    history = [];
+    undo.disabled = clear.disabled = true;
+    pdfHint.hidden = !pdf;
+    edit.hidden = finish.hidden = false;
+    file.pages.forEach((_, i) => redraw(i));
+    later();
+    findAll(mine);
+  }
+
+  const hit = (i: number, x: number, y: number) =>
+    masks.findLastIndex((m) => m.page === i && x >= m.x && x <= m.x + m.w && y >= m.y && y <= m.y + m.h);
+
+  function listen(view: HTMLCanvasElement, i: number) {
+    const at = (e: PointerEvent) => {
+      const r = view.getBoundingClientRect();
+      return { x: ((e.clientX - r.left) * view.width) / r.width, y: ((e.clientY - r.top) * view.height) / r.height, cx: e.clientX, cy: e.clientY };
+    };
+    let from: ReturnType<typeof at> | null = null;
+    let draft: Box | undefined;
+    view.addEventListener('pointerdown', (e) => {
+      view.setPointerCapture(e.pointerId);
+      from = at(e);
+      draft = undefined;
+    });
+    view.addEventListener('pointermove', (e) => {
+      const p = at(e);
+      if (!from) {
+        view.style.cursor = hit(i, p.x, p.y) >= 0 ? 'pointer' : '';
+        return;
+      }
+      // A few pixels of wobble is still a tap.
+      if (!draft && Math.hypot(p.cx - from.cx, p.cy - from.cy) < 6) return;
+      draft = { x: Math.min(from.x, p.x), y: Math.min(from.y, p.y), w: Math.abs(p.x - from.x), h: Math.abs(p.y - from.y) };
+      redraw(i, draft);
+    });
+    view.addEventListener('pointerup', (e) => {
+      if (!from) return;
+      const p = at(e);
+      const k = hit(i, p.x, p.y);
+      if (draft) commit([...masks, { ...draft, page: i }]);
+      else if (k >= 0) commit(masks.filter((_, j) => j !== k));
+      from = null;
+      draft = undefined;
+    });
+    view.addEventListener('pointercancel', () => {
+      from = null;
+      draft = undefined;
+      redraw(i);
+    });
+    view.addEventListener('keydown', (e) => {
+      if (e.key !== 'z' || !(e.ctrlKey || e.metaKey) || undo.disabled) return;
+      e.preventDefault();
+      undo.click();
+    });
+  }
+
+  undo.addEventListener('click', () => {
+    const prev = history.pop();
+    if (!prev || !file) return;
+    masks = prev;
+    undo.disabled = !history.length;
+    clear.disabled = !masks.length;
+    file.pages.forEach((_, i) => redraw(i));
+    later();
+  });
+  clear.addEventListener('click', () => file && masks.length && commit([]));
+  note.addEventListener('input', () => {
+    if (!file) return;
+    file.pages.forEach((_, i) => redraw(i));
+    later();
+  });
+
+  fileInput.addEventListener('change', () => load(fileInput.files?.[0]));
+  drop.addEventListener('dragover', (e) => e.preventDefault());
+  drop.addEventListener('drop', (e) => {
+    e.preventDefault();
+    load(e.dataTransfer?.files[0]);
+  });
+  $<HTMLFormElement>('tool').addEventListener('submit', (e) => e.preventDefault());
+  // On a slow connection a file can be picked before this script has loaded and started listening.
+  load(fileInput.files?.[0]);
+</script>
+
+<style>
+  /* Without these the full-resolution canvases size the grid tracks and burst the panel. */
+  .stage {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    min-width: 0;
+  }
+
+  .stage :global(canvas) {
+    display: block;
+    /* As wide as the panel, but a tall page stops at most of the screen's height. */
+    width: min(100%, 80vh * var(--ratio));
+    height: auto;
+    box-shadow: 0 0 0 1px var(--border);
+    cursor: crosshair;
+    touch-action: none;
+  }
+
+  .actions {
+    display: flex;
+    gap: 8px;
+  }
+</style>

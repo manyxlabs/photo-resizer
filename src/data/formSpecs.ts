@@ -110,6 +110,22 @@ export const exams: Exam[] = [
     ],
   },
   {
+    id: 'passport',
+    name: 'Indian passport',
+    covers: 'Fresh and reissue applications on Passport Seva 2.0, from 1 December 2025',
+    source: {
+      label: 'High Commission of India, Gaborone: ICAO photo guidelines for Passport Seva 2.0',
+      url: 'https://www.hcigaborone.gov.in/docs/1764218847Notice%20_%20New%20ICAO-Guidelines.pdf',
+    },
+    notes: [
+      'Since Passport Seva moved to version 2.0, applicants upload an ICAO-compliant photo and a scanned signature themselves.',
+      'Photo: in colour, 630\u00a0×\u00a0810 pixels, on a white background. A close-up of the head and the top of the shoulders, with the face taking up 80 to 85% of the picture, looking straight at the camera with eyes open and mouth closed. Take off glasses, and keep hair away from your eyes.',
+      'The notice also asks for photos unaltered by computer software, so stand against a plain white wall rather than replacing the background.',
+      'The notice gives no file size limit. The preset keeps the file under 250 KB.',
+    ],
+    specs: [{ id: 'passport-photo', label: 'Photo', width: 630, height: 810, minKB: 0, maxKB: 250, scan: false }],
+  },
+  {
     id: 'pan',
     name: 'PAN card (Protean)',
     covers: 'New PAN and changes, through Protean (formerly NSDL)',

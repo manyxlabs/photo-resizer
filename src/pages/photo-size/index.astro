@@ -29,7 +29,7 @@ import { breadcrumbs } from '../../seo';
       {
         exams.map((exam) => (
           <li>
-            <a href={`/photo-size/${exam.id}/`}>
+            <a class="glass" href={`/photo-size/${exam.id}/`}>
               <h2>{exam.name}</h2>
               <p>{exam.covers}</p>
               <ul class="specs">
@@ -81,9 +81,7 @@ import { breadcrumbs } from '../../seo';
     display: grid;
     gap: 4px;
     padding: 20px;
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    background: var(--surface);
+    border-radius: 20px;
     text-decoration: none;
   }
 

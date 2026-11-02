@@ -1,25 +1,31 @@
-# manyxlabs.com
+# Form Photo & Signature Resizer
 
-The Manyx Labs website, built with Astro as a static site.
-Only the tool pages ship JavaScript.
+Gets a photo or signature to the exact pixel size and file size that Indian exam, bank and PAN forms ask for, at [www.manyxlabs.com/tools/photo-resizer/](https://www.manyxlabs.com/tools/photo-resizer/).
+It runs entirely in the browser: nothing is uploaded.
+It opens JPEG, PNG, WebP, AVIF, iPhone HEIC and scanner TIFF files and always hands back a JPG.
+
+The per-exam size guides at [/photo-size/](https://www.manyxlabs.com/photo-size/) come from the same data as the presets, `src/data/formSpecs.ts`, with each exam's official source.
 
 ```bash
 npm install
-npm run dev     # http://localhost:4321
-npm run check   # type-check
-npm run build   # static output in dist/
-npm run test:e2e  # builds, serves and drives the tools in a real browser
+npm run dev       # http://localhost:4321
+npm run check     # type-check
+npm run build     # static output in dist/
+npm run test:e2e  # builds, serves and drives the tool in a real browser
 ```
-
-Tools are listed in `src/data/tools.ts`.
-A tool marked `live` must have an `href`, and the type rejects one without it.
-Contact links live in `src/site.ts`.
-Form presets and the `/photo-size/` guides both come from `src/data/formSpecs.ts`, with each exam's official source.
-Search metadata (sitemap, `robots.txt`, schema.org data) is built from `src/seo.ts` and `astro.config.mjs`.
-Each push to `main` waits for the build to go live (`/build.txt` holds its commit), then submits the sitemap to IndexNow (`.github/workflows/indexnow.yml`, key in `public/indexnow-key.txt`).
 
 E2E runs leave every generated file and a screenshot per case in `test-results/artifacts/`.
 Where Playwright's own browser is unavailable, point it at a system one with `CHROMIUM=/usr/bin/chromium`.
+
+## How it is served
+
+This is its own Cloudflare Worker, `photo-resizer`, with no route or domain of its own.
+The website Worker ([manyxlabs/website](https://github.com/manyxlabs/website)) forwards `/tools/photo-resizer*`, `/photo-size*`, `/_resizer/*` and `/sitemap-resizer-*` to it through a service binding, so the tool keeps its URLs on www.manyxlabs.com.
+Its bundles live under `/_resizer/` and its sitemap is `sitemap-resizer-index.xml`, so nothing collides with the website's own files.
+The header, footer and layout are copies of the website's; change both together.
+
+Each push to `main` is built and deployed by Cloudflare Workers Builds.
+Once `/_resizer/build.txt` shows the pushed commit, `.github/workflows/indexnow.yml` submits this sitemap to IndexNow.
 
 ## License
 

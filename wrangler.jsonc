@@ -1,9 +1,14 @@
-// Cloudflare Workers serves the built site as static assets; there is no Worker code.
+// Has no route or domain of its own: the website Worker (manyxlabs/website) reaches it
+// through a service binding for this tool's paths on www.manyxlabs.com.
 {
-  "name": "website",
+  "name": "photo-resizer",
+  "main": "worker.ts",
   "compatibility_date": "2026-10-01",
+  "workers_dev": false,
+  "preview_urls": false,
   "assets": {
     "directory": "./dist",
+    "binding": "ASSETS",
     "not_found_handling": "404-page",
     "html_handling": "auto-trailing-slash"
   }

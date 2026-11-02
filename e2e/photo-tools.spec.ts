@@ -85,7 +85,14 @@ test('a portrait is framed on the face, can go on white, and prints as a sheet',
   await page.goto('/tools/passport-photo/');
   await expect(page.locator('#preset option[value="ssc-sign"]')).toHaveCount(0);
   await page.locator('#preset').selectOption('passport-photo');
+  // A slow connection: no file may be offered before the photo is framed.
+  await page.route('**/_resizer/models/**', async (route) => (await new Promise((r) => setTimeout(r, 2000)), route.continue()));
   await page.locator('#file').setInputFiles('e2e/fixtures/face.jpg');
+  await expect(page.locator('#work')).toBeVisible();
+  await page.waitForTimeout(500);
+  // Checked once, not retried: a retrying check would pass on any moment the link happened to be hidden.
+  expect(await page.locator('#work').isVisible()).toBe(true);
+  expect(await page.getByRole('link', { name: 'Download JPG' }).isVisible()).toBe(false);
   await expect(page.locator('#work')).toBeHidden({ timeout: 60_000 });
   const framed = await save(page, 'passport-framed', 'Download JPG');
   expect(await measure(page, framed.bytes)).toMatchObject({ width: 630, height: 810 });

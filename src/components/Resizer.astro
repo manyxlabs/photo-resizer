@@ -303,6 +303,10 @@ const accepts = 'JPG, PNG, WebP, HEIC (iPhone), AVIF, TIFF, GIF or BMP';
   async function prepare(): Promise<boolean> {
     const img = image;
     if (!img || !target) return true;
+    // A render queued before this would publish a file without the result being prepared.
+    clearTimeout(timer);
+    job++;
+    download.hidden = true;
     if (target.scan && clean.checked && cleaned?.ink !== ink.value) {
       cleaned?.bitmap.close();
       cleaned = { ink: ink.value as Ink, ...cleanScan(img, ink.value as Ink) };

@@ -1,0 +1,53 @@
+---
+import Resizer from '../../../components/Resizer.astro';
+import { RESIZER_FAQ } from '../../../data/faq';
+import { PHOTO_KB } from '../../../data/tools';
+import Tool from '../../../layouts/Tool.astro';
+
+export function getStaticPaths() {
+  return PHOTO_KB.map((kb) => ({ params: { size: `${kb}-kb` }, props: { kb } }));
+}
+
+const { kb } = Astro.props as { kb: number };
+---
+
+<Tool
+  path="/tools/photo-resizer/"
+  variant={{ path: `/tools/photo-resizer/${kb}-kb/`, name: `Photo under ${kb} KB` }}
+  title={`Resize Photo to ${kb} KB Online, free and private - Manyx Labs`}
+  description={`Reduce a photo or signature to under ${kb} KB, at the exact pixel or cm size your form asks for, from JPG, PNG, HEIC or WebP. Free, and nothing is uploaded.`}
+  heading={`Resize a photo to ${kb} KB`}
+  applicationCategory="MultimediaApplication"
+  faq={RESIZER_FAQ}
+>
+  <Fragment slot="lede">
+    Get any photo under {kb} KB at the size your form asks for. Set the width and height below (in cm or pixels), or
+    pick your exam from the list. It all happens on your device; nothing is uploaded.
+  </Fragment>
+
+  <Resizer maxKB={kb} />
+
+  <p class="sizes">
+    Other limits:{' '}
+    {
+      PHOTO_KB.filter((s) => s !== kb).map((s, i) => (
+        <>
+          {i > 0 && ' · '}
+          <a href={`/tools/photo-resizer/${s}-kb/`}>{s} KB</a>
+        </>
+      ))
+    }
+  </p>
+</Tool>
+
+<style>
+  .sizes {
+    margin-top: 24px;
+    color: var(--muted);
+    font-size: 0.9375rem;
+  }
+
+  .sizes a {
+    color: var(--accent);
+  }
+</style>

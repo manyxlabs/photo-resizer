@@ -15,7 +15,9 @@ async function makeImage(page: Page, kind: 'noisy' | 'flat' | 'portrait', width:
       const g = c.getContext('2d')!;
       if (kind === 'noisy') {
         const px = g.createImageData(width, height);
-        for (let i = 0; i < px.data.length; i++) px.data[i] = (i + 1) % 4 === 0 ? 255 : Math.random() * 255;
+        // getRandomValues fills at most 64 KB per call.
+        for (let at = 0; at < px.data.length; at += 65536) crypto.getRandomValues(px.data.subarray(at, at + 65536));
+        for (let i = 3; i < px.data.length; i += 4) px.data[i] = 255;
         g.putImageData(px, 0, 0);
       } else if (kind === 'portrait') {
         // Smooth like a real photo, which compresses far better than noise.
@@ -35,7 +37,8 @@ async function makeImage(page: Page, kind: 'noisy' | 'flat' | 'portrait', width:
         g.font = `${Math.round(height / 3)}px serif`;
         g.fillText('Manish', width * 0.1, height * 0.6);
       }
-      const blob = await c.convertToBlob({ type: 'image/png' });
+      // Noise stands in for a camera photo, which arrives as a JPEG; PNG noise would be 36 MB.
+      const blob = await c.convertToBlob(kind === 'noisy' ? { type: 'image/jpeg', quality: 0.92 } : { type: 'image/png' });
       const bytes = new Uint8Array(await blob.arrayBuffer());
       let s = '';
       for (const b of bytes) s += String.fromCharCode(b);
@@ -43,7 +46,8 @@ async function makeImage(page: Page, kind: 'noisy' | 'flat' | 'portrait', width:
     },
     { kind, width, height },
   );
-  return { name: `${kind}.png`, mimeType: 'image/png', buffer: Buffer.from(b64, 'base64') };
+  const jpeg = kind === 'noisy';
+  return { name: `${kind}.${jpeg ? 'jpg' : 'png'}`, mimeType: jpeg ? 'image/jpeg' : 'image/png', buffer: Buffer.from(b64, 'base64') };
 }
 
 async function download(page: Page, name: string): Promise<{ bytes: Buffer; fileName: string }> {
@@ -185,7 +189,7 @@ test('a file picked before the page script has loaded is still opened', async ({
   await expect(page.getByRole('link', { name: 'Download JPG' })).toBeVisible();
 });
 
-const GUIDES = ['ibps', 'ssc', 'upsc', 'pan', 'pan-utiitsl'];
+const GUIDES = ['ibps', 'ssc', 'upsc', 'passport', 'pan', 'pan-utiitsl'];
 
 for (const exam of GUIDES) {
   test(`every ${exam} guide button gives a file that matches the guide`, async ({ page }) => {
@@ -202,9 +206,9 @@ for (const exam of GUIDES) {
       const kb = /(?:(\d+) to )?(\d+) KB/.exec(await dd.nth(1).innerText())!;
       const named = /named (\S+\.jpg)/.exec(await dd.nth(2).innerText());
 
-      await spec.getByRole('link', { name: 'Open in the resizer' }).click();
-      await expect(page).toHaveURL(/\/tools\/photo-resizer\/\?preset=/);
       const scan = !/photo/i.test(label);
+      await spec.getByRole('link', { name: scan ? 'Open in the signature cleaner' : 'Open in the photo maker' }).click();
+      await expect(page).toHaveURL(scan ? /\/tools\/signature-resizer\/\?preset=/ : /\/tools\/passport-photo\/\?preset=/);
       await page.locator('#file').setInputFiles(await makeImage(page, scan ? 'flat' : 'portrait', 1500, 1500));
       const { bytes, fileName } = await download(page, `${exam}-${i}`);
 

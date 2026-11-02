@@ -51,8 +51,8 @@ const title = `${exam.name} photo and signature size ${CHECKED.year}`;
             <dt>Format</dt>
             <dd>JPG{spec.fileName && `, named ${spec.fileName}.jpg`}</dd>
           </dl>
-          <a class="btn primary" href={`/tools/photo-resizer/?preset=${spec.id}`}>
-            Open in the resizer
+          <a class="btn primary" href={`/tools/${spec.scan ? 'signature-resizer' : 'passport-photo'}/?preset=${spec.id}`}>
+            {spec.scan ? 'Open in the signature cleaner' : 'Open in the photo maker'}
           </a>
         </section>
       ))

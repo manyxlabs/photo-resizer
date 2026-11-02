@@ -1,0 +1,833 @@
+---
+import Explainer from '../../components/Explainer.astro';
+import Tool from '../../layouts/Tool.astro';
+import { STATES } from '../../lib/money';
+
+// Centre Jurisdiction (99) is a GSTIN code, never a place of supply.
+const places = Object.entries(STATES).filter(([code]) => code !== '99');
+const slabs: [string, string][] = [
+  ['0', '0% (nil rated)'],
+  ['5', '5%'],
+  ['18', '18%'],
+  ['40', '40%'],
+];
+const special: [string, string][] = [
+  ['0.1', '0.1% (supply to merchant exporters)'],
+  ['0.25', '0.25% (rough diamonds and precious stones)'],
+  ['1.5', '1.5% (cut and polished diamonds)'],
+  ['3', '3% (gold, silver and jewellery)'],
+];
+---
+
+<Tool
+  path="/tools/gst-invoice/"
+  title="GST Invoice Generator: free online tax invoice, PDF - Manyx Labs"
+  description="Make a GST tax invoice with CGST and SGST or IGST worked out from the GSTINs and place of supply, the 2025 GST rates, the total in words and a print-ready PDF. Free, no signup, and nothing is uploaded."
+  heading="GST invoice generator"
+  applicationCategory="BusinessApplication"
+  faq={[
+    [
+      'What must a GST tax invoice contain?',
+      "Under Rule 46 of the CGST Rules, 2017: the supplier's name, address and GSTIN; a serial number of up to 16 characters; the date; the recipient's name, address and GSTIN if registered; the HSN or SAC code, description, quantity and unit; the taxable value; the tax rate and amount of each tax; the place of supply with the state's name for inter-state supplies; whether tax is payable on reverse charge; and the supplier's signature.",
+    ],
+    [
+      'When do I charge IGST instead of CGST and SGST?',
+      "When the supplier's state and the place of supply are different, the supply is inter-state and carries IGST at the full rate. When they are the same, it carries CGST and SGST at half the rate each, or CGST and UTGST in a union territory without a legislature.",
+    ],
+    [
+      'How long can a GST invoice number be?',
+      'At most 16 characters, using letters, digits, hyphens and slashes, and unique within a financial year. That is Rule 46(b) of the CGST Rules, 2017.',
+    ],
+    [
+      'What are the GST rates after September 2025?',
+      'From 22 September 2025, most goods and services are taxed at 5% or 18%, with 40% for a few luxury and sin goods. Special rates remain, such as 3% for gold, silver and jewellery and 0.25% for rough diamonds.',
+    ],
+    [
+      'Do I need the GSTIN of an unregistered customer?',
+      'No, an unregistered customer has none. If the taxable value is ₹50,000 or more, Rule 46(e) asks for their name, address, and the state and its code instead.',
+    ],
+  ]}
+>
+  <Fragment slot="lede">
+    A tax invoice with CGST and SGST or IGST worked out for you, ready to print or save as PDF. It all happens on your
+    device; nothing is uploaded.
+  </Fragment>
+
+  <form id="tool" class="tool" novalidate>
+    <section class="panel glass">
+      <h2><span>1</span> Your business</h2>
+      <div class="pair">
+        <label class="field">Business name <input id="s-name" type="text" autocomplete="organization" /></label>
+        <label class="field">
+          GSTIN
+          <input id="s-gstin" type="text" maxlength="15" autocapitalize="characters" spellcheck="false" placeholder="27ABCDE1234F1Z5" />
+        </label>
+      </div>
+      <p id="s-gstin-error" class="error" role="alert" hidden></p>
+      <p id="s-state" class="hint" hidden></p>
+      <label class="field">Address <textarea id="s-address" rows="3"></textarea></label>
+    </section>
+
+    <section class="panel glass">
+      <h2><span>2</span> Customer</h2>
+      <div class="pair">
+        <label class="field">Name <input id="c-name" type="text" /></label>
+        <label class="field">
+          GSTIN (blank if unregistered)
+          <input id="c-gstin" type="text" maxlength="15" autocapitalize="characters" spellcheck="false" />
+        </label>
+      </div>
+      <p id="c-gstin-error" class="error" role="alert" hidden></p>
+      <label class="field">Address <textarea id="c-address" rows="3"></textarea></label>
+    </section>
+
+    <section class="panel glass">
+      <h2><span>3</span> Invoice details</h2>
+      <div class="pair">
+        <label class="field">Invoice number <input id="no" type="text" spellcheck="false" placeholder="INV/2026-27/001" /></label>
+        <label class="field">Date <input id="date" type="date" /></label>
+      </div>
+      <p id="no-error" class="error" role="alert" hidden></p>
+      <div class="pair">
+        <label class="field">
+          Place of supply
+          <select id="pos">
+            <option value="">Choose a state</option>
+            {places.map(([code, name]) => <option value={code}>{`${name} (${code})`}</option>)}
+          </select>
+        </label>
+        <label class="field">
+          Reverse charge
+          <select id="rc">
+            <option value="no">No</option>
+            <option value="yes">Yes</option>
+          </select>
+        </label>
+      </div>
+      <p id="tax-kind" class="hint"></p>
+    </section>
+
+    <section class="panel glass">
+      <h2><span>4</span> Items</h2>
+      <div id="items" class="items"></div>
+      <button id="add" class="btn" type="button">Add item</button>
+    </section>
+
+    <section class="panel glass">
+      <h2><span>5</span> Payment and notes (optional)</h2>
+      <div class="pair">
+        <label class="field">Bank details <textarea id="bank" rows="3" placeholder="Bank, account number and IFSC"></textarea></label>
+        <label class="field">Notes <textarea id="notes" rows="3" placeholder="Payment due in 15 days"></textarea></label>
+      </div>
+      <label class="field">UPI ID <input id="upi" type="text" spellcheck="false" placeholder="business@upi" /></label>
+    </section>
+
+    <section class="panel glass">
+      <h2><span>6</span> Print or save as PDF</h2>
+      <div class="result">
+        <p id="summary" aria-live="polite"></p>
+        <button id="print" class="btn primary" type="button">Print or save as PDF</button>
+      </div>
+      <ul id="problems" class="error" role="alert" hidden></ul>
+      <p class="hint">To get a PDF, pick "Save as PDF" as the printer in the print dialog.</p>
+    </section>
+  </form>
+
+  <template id="item">
+    <fieldset class="item">
+      <legend>Item <span data-k="n"></span></legend>
+      <button class="remove" type="button" data-k="remove">Remove</button>
+      <label class="field wide">Description <input data-k="desc" type="text" /></label>
+      <label class="field hsn">HSN/SAC <input data-k="hsn" type="text" inputmode="numeric" spellcheck="false" /></label>
+      <label class="field">Quantity <input data-k="qty" type="text" inputmode="decimal" value="1" /></label>
+      <label class="field">Unit <input data-k="unit" type="text" placeholder="Nos" /></label>
+      <label class="field">Rate (₹) <input data-k="rate" type="text" inputmode="decimal" /></label>
+      <label class="field">
+        GST
+        <select data-k="gst">
+          <optgroup label="Rates">
+            {slabs.map(([v, l]) => <option value={v} selected={v === '18'}>{l}</option>)}
+          </optgroup>
+          <optgroup label="Special rates">
+            {special.map(([v, l]) => <option value={v}>{l}</option>)}
+          </optgroup>
+        </select>
+      </label>
+      <p class="error wide" data-k="error" role="alert" hidden></p>
+    </fieldset>
+  </template>
+
+  <div class="sheets" aria-label="Invoice preview">
+    <article class="invoice">
+      <header>
+        <h3>Tax invoice</h3>
+        <dl class="meta">
+          <div><dt>Invoice no.</dt><dd data-k="no"></dd></div>
+          <div><dt>Date</dt><dd data-k="date"></dd></div>
+          <div><dt>Place of supply</dt><dd data-k="pos"></dd></div>
+          <div><dt>Reverse charge</dt><dd data-k="rc"></dd></div>
+        </dl>
+      </header>
+      <div class="parties">
+        <section>
+          <p class="label">From</p>
+          <p class="name" data-k="s-name"></p>
+          <p class="lines" data-k="s-address"></p>
+          <p>GSTIN <span data-k="s-gstin"></span></p>
+          <p>State <span data-k="s-state"></span></p>
+        </section>
+        <section>
+          <p class="label">Bill to</p>
+          <p class="name" data-k="c-name"></p>
+          <p class="lines" data-k="c-address"></p>
+          <p data-k="c-gstin"></p>
+          <p>State <span data-k="c-state"></span></p>
+        </section>
+      </div>
+      <div class="scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Description</th>
+              <th>HSN/SAC</th>
+              <th class="n">Qty</th>
+              <th class="n">Rate</th>
+              <th class="n">GST</th>
+              <th class="n">Taxable value</th>
+            </tr>
+          </thead>
+          <tbody data-k="lines"></tbody>
+        </table>
+      </div>
+      <div class="sums">
+        <div class="scroll">
+          <table class="taxes">
+            <thead data-k="tax-head"></thead>
+            <tbody data-k="taxes"></tbody>
+          </table>
+        </div>
+        <dl class="totals" data-k="totals"></dl>
+      </div>
+      <p class="words">Amount in words: <b data-k="words"></b></p>
+      <p class="rc-note" data-k="rc-note" hidden></p>
+      <div class="foot">
+        <section data-k="pay">
+          <p class="label">Payment</p>
+          <p class="lines" data-k="bank"></p>
+          <p data-k="upi"></p>
+        </section>
+        <section data-k="notes-box">
+          <p class="label">Notes</p>
+          <p class="lines" data-k="notes"></p>
+        </section>
+        <div class="sign">
+          <p>For <span data-k="s-name-2"></span></p>
+          <span class="by">Authorised signatory</span>
+        </div>
+      </div>
+    </article>
+  </div>
+
+  <Explainer title="The rules this invoice follows">
+    <li>
+      The fields are the ones <a
+        href="https://taxinformation.cbic.gov.in/content/html/tax_repository/gst/rules/cgst_rules/active/chapter6/rule46_v1.00.html"
+        >Rule 46 of the CGST Rules, 2017</a
+      > asks a tax invoice to carry, including a serial number of at most 16 characters (letters, digits, "-" and "/"),
+      unique for the financial year, and whether tax is payable on reverse charge.
+    </li>
+    <li>
+      When your state, taken from the first two digits of your GSTIN, is the same as the place of supply, the invoice
+      charges CGST and SGST at half the rate each; in a union territory without a legislature, UTGST takes the place of
+      SGST. Otherwise it charges IGST at the full rate. The place of supply starts as your customer's state; change it
+      if the goods are delivered, or the service is supplied, somewhere else.
+    </li>
+    <li>
+      The rates are the ones in force since 22 September 2025, after the <a
+        href="https://www.pib.gov.in/PressReleasePage.aspx?PRID=2163555">56th GST Council meeting</a
+      > cut the main rates to 5% and 18%, with 40% for a few goods, plus the special rates kept for precious metals,
+      diamonds and stones and supplies to merchant exporters.
+    </li>
+    <li>
+      Tax is worked out on the taxable value of each rate, rounded to the paisa, and the total is rounded to the nearest
+      rupee, with the difference shown as round off. GSTINs are checked for their format, state code and check
+      character, which catches most typos; it can't tell you whether a GSTIN is active.
+    </li>
+    <li>
+      This is a convenience, not tax advice. Check anything you're unsure of with your accountant. Your business details
+      are remembered in this browser to save typing next time; nothing leaves your device.
+    </li>
+  </Explainer>
+</Tool>
+
+<script>
+  import { UTGST_STATES, STATES, gstinError, gstinState, inWords, roundPaise, rupees, toPaise } from '../../lib/money';
+
+  const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+  const field = (id: string) => $<HTMLInputElement>(id);
+  const val = (id: string) => field(id).value.trim();
+  const sheet = document.querySelector<HTMLElement>('.invoice')!;
+  new ResizeObserver(() => (sheet.style.zoom = String(Math.min(1, sheet.parentElement!.clientWidth / 680)))).observe(sheet.parentElement!);
+  const slot = <T extends HTMLElement>(k: string, root: ParentNode = sheet) => root.querySelector(`[data-k="${k}"]`) as T;
+  const set = (k: string, text: string) => (slot(k).textContent = text);
+  const items = $<HTMLDivElement>('items');
+  const template = $<HTMLTemplateElement>('item');
+  const problems = $<HTMLUListElement>('problems');
+  const pos = $<HTMLSelectElement>('pos');
+  const KEY = 'gst-invoice-supplier';
+  const REMEMBERED = ['s-name', 's-gstin', 's-address', 'bank', 'upi'];
+  // Rule 46(e): below this an unregistered customer's address is optional.
+  const ADDRESS_FROM = 50000_00;
+  const blank = '________________';
+  const day = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+
+  type Line = { desc: string; hsn: string; qty: number; unit: string; rate: number; gst: number; taxable: number };
+
+  function show(el: HTMLElement, text: string) {
+    el.textContent = text;
+    el.hidden = !text;
+  }
+
+  const cell = (text: string, cls = '') => Object.assign(document.createElement('td'), { textContent: text, className: cls });
+  const row = (...cells: HTMLTableCellElement[]) => {
+    const tr = document.createElement('tr');
+    tr.append(...cells);
+    return tr;
+  };
+  const percent = (rate: number) => `${rate}%`;
+  const stateName = (code: string) => (STATES[code] ? `${STATES[code]} (${code})` : blank);
+
+  function addItem() {
+    const card = template.content.cloneNode(true) as DocumentFragment;
+    items.append(card);
+    renumber();
+  }
+
+  function renumber() {
+    const rows = [...items.children] as HTMLElement[];
+    rows.forEach((r, i) => {
+      slot('n', r).textContent = String(i + 1);
+      slot<HTMLButtonElement>('remove', r).hidden = rows.length === 1;
+    });
+  }
+
+  /** Each item row as a Line, with the reason it can't be totalled shown under it. */
+  function readLines() {
+    return ([...items.children] as HTMLElement[]).map((r) => {
+      const get = (k: string) => slot<HTMLInputElement>(k, r).value.trim();
+      const qtyText = get('qty');
+      const qty = /^(\d+(\.\d{1,3})?|\.\d{1,3})$/.test(qtyText) ? Number(qtyText) : NaN;
+      const rate = toPaise(get('rate'));
+      const hsn = get('hsn');
+      const errors = [
+        qtyText && !(qty > 0) && 'Enter the quantity as a number, up to 3 decimals.',
+        get('rate') && Number.isNaN(rate) && 'Enter the rate in rupees, like 1250 or 1250.50.',
+        hsn && !/^(\d{4}|\d{6}|\d{8})$/.test(hsn) && 'An HSN or SAC code is 4, 6 or 8 digits.',
+      ].filter(Boolean);
+      show(slot('error', r), errors.join(' '));
+      const taxable = qty > 0 && rate >= 0 ? roundPaise(qty * rate) : NaN;
+      const line: Line = { desc: get('desc'), hsn, qty, unit: get('unit'), rate, gst: Number(get('gst')), taxable };
+      return { row: r, line, errors };
+    });
+  }
+
+  function render() {
+    const sGstin = val('s-gstin').toUpperCase();
+    const cGstin = val('c-gstin').toUpperCase();
+    const sErr = sGstin && gstinError(sGstin);
+    const cErr = cGstin && gstinError(cGstin);
+    show($('s-gstin-error'), sErr || '');
+    show($('c-gstin-error'), cErr || '');
+    const supplierState = sGstin && !sErr ? gstinState(sGstin) : '';
+    show($('s-state'), supplierState ? `State: ${stateName(supplierState)}` : '');
+    const no = val('no');
+    show(
+      $('no-error'),
+      no.length > 16
+        ? `An invoice number can have at most 16 characters (Rule 46). This one has ${no.length}.`
+        : no && !/^[A-Za-z0-9/-]+$/.test(no)
+          ? 'Use only letters, digits, "-" and "/" in the invoice number (Rule 46).'
+          : '',
+    );
+
+    const place = pos.value;
+    const inter = !!supplierState && !!place && supplierState !== place;
+    const local = UTGST_STATES.has(place) ? 'UTGST' : 'SGST';
+    $('tax-kind').textContent =
+      supplierState && place
+        ? inter
+          ? 'Inter-state supply: IGST at the full rate.'
+          : `Intra-state supply: CGST and ${local} at half the rate each.`
+        : 'Enter your GSTIN and the place of supply to work out the tax.';
+
+    const lines = readLines().map((r) => r.line);
+    const rates = new Map<number, number>();
+    for (const l of lines) if (l.taxable >= 0) rates.set(l.gst, (rates.get(l.gst) ?? 0) + l.taxable);
+    const groups = [...rates].sort(([a], [b]) => a - b).map(([rate, taxable]) => {
+      // Each half is rounded on its own, so CGST and SGST always match, as they must on the return.
+      const half = roundPaise((taxable * rate) / 200);
+      return { rate, taxable, half, igst: roundPaise((taxable * rate) / 100) };
+    });
+    const taxable = groups.reduce((s, g) => s + g.taxable, 0);
+    const tax = groups.reduce((s, g) => s + (inter ? g.igst : 2 * g.half), 0);
+    const reverse = $<HTMLSelectElement>('rc').value === 'yes';
+    // Under reverse charge the customer pays the tax to the government, not to you.
+    const gross = reverse ? taxable : taxable + tax;
+    const total = Math.round(gross / 100) * 100;
+
+    set('no', no || blank);
+    const date = val('date');
+    set('date', /^\d{4}-\d{2}-\d{2}$/.test(date) ? day.format(new Date(`${date}T00:00:00Z`)) : blank);
+    set('pos', place ? stateName(place) : blank);
+    set('rc', reverse ? 'Yes' : 'No');
+    set('s-name', val('s-name') || blank);
+    set('s-name-2', val('s-name') || blank);
+    set('s-address', val('s-address'));
+    set('s-gstin', sGstin || blank);
+    set('s-state', supplierState ? stateName(supplierState) : blank);
+    set('c-name', val('c-name') || blank);
+    set('c-address', val('c-address'));
+    set('c-gstin', cGstin ? `GSTIN ${cGstin}` : 'Unregistered');
+    set('c-state', cGstin && !cErr ? stateName(gstinState(cGstin)) : place ? stateName(place) : blank);
+
+    slot('lines').replaceChildren(
+      ...lines.map((l, i) =>
+        row(
+          cell(String(i + 1)),
+          cell(l.desc || blank),
+          cell(l.hsn),
+          cell(l.qty > 0 ? `${l.qty}${l.unit ? ` ${l.unit}` : ''}` : '', 'n'),
+          cell(l.rate >= 0 ? rupees(l.rate) : '', 'n'),
+          cell(percent(l.gst), 'n'),
+          cell(l.taxable >= 0 ? rupees(l.taxable) : '', 'n'),
+        ),
+      ),
+    );
+
+    const heads = inter ? ['GST rate', 'Taxable value', 'IGST', 'Total tax'] : ['GST rate', 'Taxable value', 'CGST', local, 'Total tax'];
+    const headRow = document.createElement('tr');
+    headRow.append(...heads.map((h, i) => Object.assign(document.createElement('th'), { textContent: h, className: i ? 'n' : '' })));
+    slot('tax-head').replaceChildren(headRow);
+    slot('taxes').replaceChildren(
+      ...groups.map((g) =>
+        inter
+          ? row(cell(percent(g.rate)), cell(rupees(g.taxable), 'n'), cell(rupees(g.igst), 'n'), cell(rupees(g.igst), 'n'))
+          : row(
+              cell(percent(g.rate)),
+              cell(rupees(g.taxable), 'n'),
+              cell(`${rupees(g.half)} @ ${percent(g.rate / 2)}`, 'n'),
+              cell(`${rupees(g.half)} @ ${percent(g.rate / 2)}`, 'n'),
+              cell(rupees(2 * g.half), 'n'),
+            ),
+      ),
+    );
+
+    const totals: [string, number, string?][] = [
+      ['Taxable value', taxable],
+      ...((inter
+        ? [['IGST', tax]]
+        : [
+            ['CGST', tax / 2],
+            [local, tax / 2],
+          ]) as [string, number][]),
+      ...(reverse ? ([['Less tax payable by recipient', -tax]] as [string, number][]) : []),
+      ['Round off', total - gross],
+      ['Total', total, 'grand'],
+    ];
+    slot('totals').replaceChildren(
+      ...totals.map(([label, paise, cls]) => {
+        const div = Object.assign(document.createElement('div'), { className: cls ?? '' });
+        const sign = label === 'Round off' && paise > 0 ? '+' : '';
+        div.append(
+          Object.assign(document.createElement('dt'), { textContent: label }),
+          Object.assign(document.createElement('dd'), { textContent: sign + rupees(paise) }),
+        );
+        return div;
+      }),
+    );
+    const safe = Number.isSafeInteger(total);
+    set('words', safe ? inWords(total) : '');
+    const note = slot('rc-note');
+    note.hidden = !reverse;
+    note.textContent = reverse ? `GST of ${rupees(tax)} on this invoice is payable by the recipient under reverse charge.` : '';
+
+    set('bank', val('bank'));
+    set('upi', val('upi') ? `UPI ${val('upi')}` : '');
+    slot('pay').hidden = !val('bank') && !val('upi');
+    set('notes', val('notes'));
+    slot('notes-box').hidden = !val('notes');
+
+    $('summary').textContent = safe ? `Total ${rupees(total)}` : 'The amounts are too large to total.';
+    return { taxable, safe, cGstin };
+  }
+
+  function check() {
+    const { taxable, safe, cGstin } = render();
+    const found: [HTMLElement, string][] = [];
+    const need = (id: string, text: string) => !val(id) && found.push([field(id), text]);
+    need('s-name', 'Enter your business name.');
+    need('s-gstin', 'Enter your GSTIN.');
+    need('s-address', 'Enter your business address.');
+    need('c-name', "Enter the customer's name.");
+    if (cGstin || taxable >= ADDRESS_FROM)
+      need('c-address', "Enter the customer's address. Rule 46 asks for it from a registered customer, or for ₹50,000 or more.");
+    need('no', 'Enter the invoice number.');
+    need('date', 'Enter the invoice date.');
+    if (!$<HTMLSelectElement>('pos').value) found.push([pos, 'Choose the place of supply.']);
+    for (const id of ['s-gstin-error', 'c-gstin-error', 'no-error']) {
+      const text = $(id).textContent;
+      if (text) found.push([field(id.replace('-error', '')), text]);
+    }
+    readLines().forEach(({ row: r, line, errors }, i) => {
+      const at = (k: string) => slot<HTMLInputElement>(k, r);
+      if (!line.desc) found.push([at('desc'), `Item ${i + 1}: enter a description.`]);
+      if (!at('qty').value.trim()) found.push([at('qty'), `Item ${i + 1}: enter the quantity.`]);
+      if (!at('rate').value.trim()) found.push([at('rate'), `Item ${i + 1}: enter the rate.`]);
+      for (const e of errors) found.push([at('desc'), `Item ${i + 1}: ${e}`]);
+    });
+    if (!safe) found.push([items, 'The amounts are too large to total.']);
+    problems.replaceChildren(...found.map(([, t]) => Object.assign(document.createElement('li'), { textContent: t })));
+    problems.hidden = !found.length;
+    found[0]?.[0].focus();
+    return !found.length;
+  }
+
+  try {
+    const saved = JSON.parse(localStorage.getItem(KEY) ?? '{}');
+    for (const id of REMEMBERED) if (typeof saved[id] === 'string') field(id).value = saved[id];
+  } catch {}
+
+  const today = new Date();
+  field('date').value = [today.getFullYear(), today.getMonth() + 1, today.getDate()].map((n) => String(n).padStart(2, '0')).join('-');
+  addItem();
+
+  let defaulted = '';
+  $('tool').addEventListener('input', (e) => {
+    // The place of supply follows the customer's GSTIN until it is changed by hand.
+    const c = val('c-gstin').toUpperCase();
+    if (e.target === field('c-gstin') && c !== defaulted && !gstinError(c)) {
+      pos.value = gstinState(c);
+      defaulted = c;
+    }
+    if (problems.hidden) render();
+    else check();
+    try {
+      localStorage.setItem(KEY, JSON.stringify(Object.fromEntries(REMEMBERED.map((id) => [id, field(id).value]))));
+    } catch {}
+  });
+  $('tool').addEventListener('submit', (e) => e.preventDefault());
+  $('add').addEventListener('click', () => {
+    addItem();
+    render();
+    slot<HTMLInputElement>('desc', items.lastElementChild!).focus();
+  });
+  items.addEventListener('click', (e) => {
+    const button = (e.target as HTMLElement).closest('[data-k="remove"]');
+    if (!button) return;
+    button.closest('.item')!.remove();
+    renumber();
+    render();
+  });
+  $('print').addEventListener('click', () => check() && window.print());
+  render();
+</script>
+
+<style>
+  .pair {
+    display: grid;
+    gap: 12px;
+  }
+
+  @media (min-width: 560px) {
+    .pair {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  /* Chrome gives date inputs a content-sized minimum that would push past a phone's edge. */
+  input[type='date'] {
+    min-width: 0;
+  }
+
+  ul.error {
+    margin: 0;
+    padding-left: 20px;
+  }
+
+  .items {
+    display: grid;
+    gap: 12px;
+  }
+
+  .item {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    min-width: 0;
+    margin: 0;
+    padding: 12px 14px 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+  }
+
+  .item .hsn {
+    grid-column: 1 / -1;
+  }
+
+  @media (min-width: 640px) {
+    .item {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+
+    .item .hsn {
+      grid-column: auto;
+    }
+  }
+
+  .item legend {
+    padding-inline: 4px;
+    color: var(--muted);
+    font-size: 0.8125rem;
+    font-weight: 550;
+  }
+
+  .item .wide {
+    grid-column: 1 / -1;
+  }
+
+  .remove {
+    grid-column: 1 / -1;
+    justify-self: end;
+    margin-top: -8px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--accent);
+    font: inherit;
+    font-size: 0.875rem;
+    cursor: pointer;
+  }
+
+  #add {
+    justify-self: start;
+  }
+
+  /* The invoice is paper in either theme, since that is what it becomes. */
+  .sheets {
+    margin-top: 16px;
+  }
+
+  .invoice {
+    display: grid;
+    gap: 18px;
+    padding: 24px;
+    border: 1px solid #d4d4d8;
+    border-radius: 4px;
+    background: #fff;
+    color: #1d1d1f;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+
+  /* A phone shows the page scaled down whole, as it will print, rather than with columns cut off. */
+  @media screen {
+    .invoice {
+      width: 680px;
+    }
+  }
+
+  .invoice header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 24px;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding-bottom: 14px;
+    border-bottom: 2px solid #1d1d1f;
+  }
+
+  .invoice h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .meta,
+  .totals {
+    display: grid;
+    gap: 2px;
+    margin: 0;
+  }
+
+  .meta div,
+  .totals :global(div) {
+    display: flex;
+    gap: 16px;
+    justify-content: space-between;
+  }
+
+  .meta dt,
+  .label {
+    color: #6e6e73;
+  }
+
+  .meta dd,
+  .totals :global(dd) {
+    margin: 0;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .parties,
+  .foot {
+    display: grid;
+    gap: 16px;
+  }
+
+  @media (min-width: 560px) {
+    .parties,
+    .foot {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  .name {
+    font-size: 0.9375rem;
+    font-weight: 650;
+  }
+
+  .lines {
+    white-space: pre-line;
+  }
+
+  .scroll {
+    overflow-x: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Rows are built in the script, so their cells need :global to pick up these styles. */
+  table :global(th) {
+    padding: 6px 8px;
+    border-bottom: 1px solid #1d1d1f;
+    font-weight: 600;
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  table :global(td) {
+    padding: 6px 8px;
+    border-bottom: 1px solid #e4e4e8;
+    vertical-align: top;
+  }
+
+  /* Keeps the description readable on a phone, where the table scrolls instead. */
+  table :global(td:nth-child(2)) {
+    min-width: 140px;
+  }
+
+  table :global(.n) {
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  table :global(:is(th, td):first-child) {
+    padding-left: 0;
+  }
+
+  table :global(:is(th, td):last-child) {
+    padding-right: 0;
+  }
+
+  .sums {
+    display: grid;
+    gap: 16px;
+  }
+
+  .totals {
+    justify-self: end;
+    width: min(100%, 280px);
+  }
+
+  .totals :global(.grand) {
+    margin-top: 4px;
+    padding-top: 6px;
+    border-top: 2px solid #1d1d1f;
+    font-size: 0.9375rem;
+    font-weight: 700;
+  }
+
+  .rc-note {
+    font-weight: 600;
+  }
+
+  .sign {
+    display: grid;
+    grid-column: -2;
+    justify-items: end;
+    text-align: right;
+  }
+
+  .sign .by {
+    margin-top: 40px;
+    padding-top: 4px;
+    border-top: 1px solid #1d1d1f;
+    min-width: min(200px, 100%);
+    color: #6e6e73;
+  }
+
+  @media print {
+    @page {
+      size: A4;
+      margin: 12mm;
+    }
+
+    :global(body)::before,
+    :global(body > :not(main)),
+    :global(main > :not(.sheets)) {
+      display: none !important;
+    }
+
+    :global(body),
+    :global(main) {
+      margin: 0;
+      padding: 0 !important;
+      max-width: none !important;
+      background: #fff;
+    }
+
+    .sheets {
+      margin: 0;
+    }
+
+    .invoice {
+      width: auto;
+      padding: 0;
+      border: 0;
+      font-size: 9.5pt;
+      zoom: 1 !important;
+    }
+
+    .scroll {
+      overflow: visible;
+    }
+
+    tr {
+      break-inside: avoid;
+    }
+  }
+</style>

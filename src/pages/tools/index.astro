@@ -1,0 +1,102 @@
+---
+import Footer from '../../components/Footer.astro';
+import Header from '../../components/Header.astro';
+import { tools } from '../../data/tools';
+import Base from '../../layouts/Base.astro';
+import { breadcrumbs } from '../../seo';
+---
+
+<Base
+  title="Free tools for Indian forms and paperwork - Manyx Labs"
+  description="Free tools that run in your browser: photo, signature and passport photo resizing, PDF compression, Aadhaar masking, rent receipts and GST invoices. Nothing is uploaded."
+  schema={[
+    {
+      '@type': 'ItemList',
+      name: 'Free tools for forms and paperwork',
+      itemListElement: tools.map((t, i) => ({ '@type': 'ListItem', position: i + 1, name: t.name, url: new URL(t.path, Astro.site).href })),
+    },
+    breadcrumbs([
+      ['Manyx Labs', '/'],
+      ['Tools', '/tools/'],
+    ]),
+  ]}
+>
+  <Header />
+
+  <main class="wrap">
+    <h1>Free tools for forms and paperwork</h1>
+    <p class="lede">Everything runs in your browser. Your files and details never leave your device.</p>
+
+    <ul class="list">
+      {
+        tools.map((t) => (
+          <li>
+            <a class="glass" href={t.path}>
+              <h2>{t.name}</h2>
+              <p>{t.blurb}</p>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </main>
+
+  <Footer />
+</Base>
+
+<style>
+  main {
+    max-width: 760px;
+    padding-block: 32px 64px;
+  }
+
+  h1 {
+    font-size: clamp(1.75rem, 5vw, 2.5rem);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+  }
+
+  .lede {
+    margin-top: 8px;
+    color: var(--muted);
+  }
+
+  .list {
+    display: grid;
+    gap: 12px;
+    margin: 32px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  @media (min-width: 640px) {
+    .list {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .list a {
+    display: grid;
+    align-content: start;
+    gap: 4px;
+    height: 100%;
+    padding: 20px;
+    border-radius: 20px;
+    text-decoration: none;
+  }
+
+  .list a:hover {
+    border-color: var(--muted);
+  }
+
+  h2 {
+    font-size: 1.0625rem;
+    font-weight: 620;
+  }
+
+  .list p {
+    color: var(--muted);
+    font-size: 0.9375rem;
+  }
+</style>

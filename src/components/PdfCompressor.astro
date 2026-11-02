@@ -1,0 +1,445 @@
+---
+interface Props {
+  /** The KB limit picked when the page opens; one not in the list fills the custom field. */
+  defaultKB?: number;
+}
+
+const SIZES = [100, 200, 300, 500, 1000, 2000];
+const { defaultKB = 200 } = Astro.props;
+const custom = !SIZES.includes(defaultKB);
+---
+
+<form id="tool" class="tool" novalidate>
+  <section class="panel glass">
+    <h2><span>1</span> Add your PDFs and photos</h2>
+    <label class="drop" id="drop">
+      <input id="file" type="file" multiple accept="application/pdf,.pdf,image/*,.heic,.heif,.tif,.tiff" />
+      <strong>Choose files</strong>
+      <span>or drop them here. PDF, JPG, PNG, WebP, HEIC (iPhone), TIFF and more.</span>
+    </label>
+    <p id="file-status" class="hint" aria-live="polite" hidden></p>
+    <p id="file-error" class="error" role="alert" hidden></p>
+    <ol id="files" class="files" aria-label="Files, in page order" hidden></ol>
+    <p id="total" class="hint" hidden></p>
+  </section>
+
+  <section class="panel glass">
+    <h2><span>2</span> How big can the PDF be?</h2>
+    <div class="grid">
+      <label class="field">
+        Max size
+        <select id="limit">
+          {
+            SIZES.map((kb) => (
+              <option value={kb} selected={kb === defaultKB}>
+                {kb < 1000 ? `${kb} KB` : `${kb / 1000} MB`}
+              </option>
+            ))
+          }
+          <option value="custom" selected={custom}>Custom</option>
+        </select>
+      </label>
+      <label class="field" id="custom" hidden={!custom}>
+        Max KB <input id="kb" type="number" min="1" step="any" inputmode="decimal" value={custom ? defaultKB : 150} />
+      </label>
+    </div>
+    <p id="spec-error" class="error" role="alert" hidden></p>
+    <p class="hint">Check your form's notice for the limit. Pages come out in the order of the list above.</p>
+  </section>
+
+  <section class="panel glass" id="out" hidden>
+    <h2><span>3</span> Download</h2>
+    <div class="result">
+      <p id="result" aria-live="polite"></p>
+      <a id="download" class="btn primary" download hidden>Download PDF</a>
+    </div>
+  </section>
+</form>
+
+<script>
+  import { PDFDocument } from 'pdf-lib';
+  import type { PDFDocumentProxy } from 'pdfjs-dist';
+  import { openImage } from '../lib/decode';
+  import { maxBytes } from '../lib/jpeg';
+  import { isPdf, openPdf, PdfPasswordError, renderPage } from '../lib/pdf';
+
+  // Every page is held and redrawn while searching, so a bigger merge gets slow on a phone.
+  const MAX_PAGES = 100;
+  const DPIS = [150, 120, 100, 80, 60];
+  // Below 0.5 text gets blotchy, so a lower DPI is tried before a lower quality.
+  const QUALITIES = [0.85, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1];
+  const A4: [number, number] = [595.28, 841.89];
+  const MARGIN = 36;
+
+  type Item = { file: File; pages: number } & (
+    | { kind: 'pdf'; doc: PDFDocumentProxy; lib?: Promise<PDFDocument> }
+    | { kind: 'image'; bitmap: ImageBitmap }
+  );
+  type Box = { x: number; y: number; width: number; height: number };
+  type Drawn = { canvas: HTMLCanvasElement; width: number; height: number; box?: Box };
+  type Encoded = { jpeg: Uint8Array; width: number; height: number; box?: Box };
+
+  const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+  const fileInput = $<HTMLInputElement>('file');
+  const drop = $<HTMLLabelElement>('drop');
+  const fileStatus = $<HTMLParagraphElement>('file-status');
+  const fileError = $<HTMLParagraphElement>('file-error');
+  const list = $<HTMLOListElement>('files');
+  const total = $<HTMLParagraphElement>('total');
+  const limit = $<HTMLSelectElement>('limit');
+  const custom = $<HTMLLabelElement>('custom');
+  const kbInput = $<HTMLInputElement>('kb');
+  const specError = $<HTMLParagraphElement>('spec-error');
+  const out = $<HTMLElement>('out');
+  const result = $<HTMLParagraphElement>('result');
+  const download = $<HTMLAnchorElement>('download');
+
+  const items: Item[] = [];
+  let url = '';
+  let job = 0;
+  const STALE = Symbol();
+
+  function show(el: HTMLElement, text: string) {
+    el.textContent = text;
+    el.hidden = !text;
+  }
+
+  const kb = (bytes: number) =>
+    bytes < 1024 * 1024 ? `${(bytes / 1024).toFixed(1)} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  const pageCount = () => items.reduce((n, i) => n + i.pages, 0);
+  const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
+
+  function readLimit(): number | string {
+    custom.hidden = limit.value !== 'custom';
+    const value = limit.value === 'custom' ? Number(kbInput.value) : Number(limit.value);
+    if (!(value > 0)) return 'Enter the KB limit from your form.';
+    return value;
+  }
+
+  const encode = (canvas: HTMLCanvasElement, quality: number) =>
+    new Promise<Uint8Array>((resolve, reject) =>
+      canvas.toBlob((b) => (b ? b.arrayBuffer().then((a) => resolve(new Uint8Array(a))) : reject()), 'image/jpeg', quality),
+    );
+
+  // A photo goes on an A4 page turned to match it, never upscaled past its own pixels.
+  function drawImage(bitmap: ImageBitmap, dpi: number): Drawn {
+    const [width, height] = bitmap.width > bitmap.height ? [A4[1], A4[0]] : A4;
+    const fit = Math.min((width - 2 * MARGIN) / bitmap.width, (height - 2 * MARGIN) / bitmap.height);
+    const box = { width: bitmap.width * fit, height: bitmap.height * fit, x: 0, y: 0 };
+    box.x = (width - box.width) / 2;
+    box.y = (height - box.height) / 2;
+    const px = Math.min(1, (dpi / 72) * fit);
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(bitmap.width * px));
+    canvas.height = Math.max(1, Math.round(bitmap.height * px));
+    const ctx = canvas.getContext('2d')!;
+    // Transparent PNGs would otherwise turn black as JPEG.
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    return { canvas, width, height, box };
+  }
+
+  const loadLib = (item: Item & { kind: 'pdf' }) =>
+    (item.lib ??= item.file.arrayBuffer().then((b) => PDFDocument.load(b)));
+
+  /** With `keep`, PDF pages are copied as they are; every other page is taken from `rasters`, in order. */
+  async function build(keep: boolean, rasters: Encoded[]) {
+    const doc = await PDFDocument.create();
+    let r = 0;
+    for (const item of items) {
+      if (keep && item.kind === 'pdf') {
+        const src = await loadLib(item);
+        for (const page of await doc.copyPages(src, src.getPageIndices())) doc.addPage(page);
+        continue;
+      }
+      for (let i = 0; i < item.pages; i++) {
+        const e = rasters[r++];
+        if (!e) continue;
+        const page = doc.addPage([e.width, e.height]);
+        page.drawImage(await doc.embedJpg(e.jpeg), e.box ?? { x: 0, y: 0, width: e.width, height: e.height });
+      }
+    }
+    return doc.save();
+  }
+
+  type Found = { pdf: Uint8Array; dpi?: number; quality?: number } | { smallest: number };
+
+  /**
+   * Each page is drawn once per DPI and encoded at every quality still in the running, rather than
+   * binary-searching, because holding up to 100 rendered pages for a search would not fit in a phone's memory.
+   */
+  async function search(keep: boolean, max: number, progress: (text: string) => void): Promise<Found> {
+    const fixed = keep ? (await build(true, [])).length : 0;
+    const raster = items.flatMap((item) =>
+      keep && item.kind === 'pdf'
+        ? []
+        : Array.from({ length: item.pages }, (_, i) => async (dpi: number): Promise<Drawn> =>
+            item.kind === 'pdf' ? renderPage(item.doc, i + 1, dpi) : drawImage(item.bitmap, dpi),
+          ),
+    );
+    if (!raster.length) return fixed <= max ? { pdf: await build(true, []) } : { smallest: fixed };
+    let smallest = Infinity;
+    for (const dpi of DPIS) {
+      const last = !keep && dpi === DPIS.at(-1);
+      const runs = QUALITIES.filter((q) => q >= 0.5 || last).map((quality) => ({
+        quality,
+        size: fixed,
+        pages: [] as Encoded[] | null,
+      }));
+      for (const [n, draw] of raster.entries()) {
+        progress(`Trying ${dpi} DPI: page ${n + 1} of ${raster.length}…`);
+        const { canvas, width, height, box } = await draw(dpi);
+        for (const run of runs) {
+          // The last pass encodes every quality to the end, to say how small the file could get.
+          if (!run.pages && !last) continue;
+          const jpeg = await encode(canvas, run.quality);
+          run.size += jpeg.length;
+          if (run.size > max) run.pages = null;
+          run.pages?.push({ jpeg, width, height, box });
+        }
+        canvas.width = 0;
+        if (runs.every((run) => !run.pages) && !last) break;
+      }
+      for (const run of runs) {
+        if (!run.pages) continue;
+        progress(`Putting the PDF together…`);
+        const pdf = await build(keep, run.pages);
+        if (pdf.length <= max) return { pdf, dpi, quality: run.quality };
+      }
+      if (last) smallest = runs.at(-1)!.size;
+    }
+    return { smallest };
+  }
+
+  async function run() {
+    const mine = job;
+    const max = readLimit();
+    show(specError, typeof max === 'string' ? max : '');
+    if (typeof max === 'string' || !items.length) return;
+    const bytes = maxBytes(max);
+    const progress = (text: string) => {
+      if (mine !== job) throw STALE;
+      result.textContent = text;
+    };
+    const was = items.reduce((n, i) => n + i.file.size, 0);
+    const pages = plural(pageCount(), 'page');
+    const hasPdf = items.some((i) => i.kind === 'pdf');
+    try {
+      progress('Working…');
+      let found: Found;
+      let kept = false;
+      if (items.length === 1 && items[0]!.kind === 'pdf' && was <= bytes) {
+        // Rebuilding drops bookmarks and form fields, so a file that already fits is handed back untouched.
+        found = { pdf: new Uint8Array(await items[0]!.file.arrayBuffer()) };
+        kept = true;
+      } else {
+        // pdf-lib cannot copy pages out of an encrypted or damaged PDF that pdf.js can still draw.
+        const copyable =
+          hasPdf && (await Promise.all(items.map((i) => i.kind === 'pdf' && loadLib(i))).then(() => true, () => false));
+        found = copyable ? await search(true, bytes, progress) : { smallest: Infinity };
+        kept = 'pdf' in found;
+        if (!kept) found = await search(false, bytes, progress);
+      }
+      progress('');
+      if ('smallest' in found) {
+        result.textContent = `Even as small, blurry images these ${pages} come to about ${kb(found.smallest)}, over the ${max} KB limit. Remove some pages or use a higher limit.`;
+        return;
+      }
+      URL.revokeObjectURL(url);
+      url = URL.createObjectURL(new Blob([found.pdf as BlobPart], { type: 'application/pdf' }));
+      download.href = url;
+      download.download =
+        items.length === 1 ? `${items[0]!.file.name.replace(/\.[^.]*$/, '')}-compressed.pdf` : 'merged.pdf';
+      download.hidden = false;
+      const how = kept
+        ? hasPdf
+          ? ' · text kept, so it can still be selected'
+          : ''
+        : ` · ${found.dpi} DPI, quality ${Math.round(found.quality! * 100)}%`;
+      result.textContent =
+        `${pages} · ${kb(found.pdf.length)}${found.pdf.length < was ? ` (was ${kb(was)})` : ''}${how}` +
+        (!kept && hasPdf ? '. To fit, the pages were turned into images, so the text can no longer be selected or searched.' : '');
+    } catch (err) {
+      if (err === STALE || mine !== job) return;
+      console.error(err);
+      result.textContent = `Couldn't compress these files. Try removing them one at a time to find the one that fails.`;
+    }
+  }
+
+  let timer = 0;
+  function changed() {
+    job++;
+    download.hidden = true;
+    result.textContent = '';
+    out.hidden = !items.length;
+    clearTimeout(timer);
+    timer = window.setTimeout(run, 150);
+  }
+
+  function renderList() {
+    list.replaceChildren(
+      ...items.map((item, i) => {
+        const li = document.createElement('li');
+        const text = document.createElement('div');
+        const name = document.createElement('strong');
+        const meta = document.createElement('span');
+        name.textContent = item.file.name;
+        meta.textContent = `${item.kind === 'pdf' ? plural(item.pages, 'page') : 'Photo, on an A4 page'} · ${kb(item.file.size)}`;
+        text.append(name, meta);
+        const button = (label: string, glyph: string, disabled: boolean, act: () => void) => {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'btn';
+          b.textContent = glyph;
+          b.ariaLabel = `${label} "${item.file.name}"`;
+          b.title = label;
+          b.disabled = disabled;
+          b.addEventListener('click', act);
+          return b;
+        };
+        const move = (to: number) => () => {
+          items.splice(to, 0, ...items.splice(i, 1));
+          renderList();
+          changed();
+          // Keep focus on the moved file, so it can be moved again from the keyboard.
+          list.children[to]?.querySelector<HTMLButtonElement>(`button[title="${to < i ? 'Move up' : 'Move down'}"]:not(:disabled)`)?.focus();
+        };
+        li.append(
+          text,
+          button('Move up', '↑', i === 0, move(i - 1)),
+          button('Move down', '↓', i === items.length - 1, move(i + 1)),
+          button('Remove', '×', false, () => {
+            close(items.splice(i, 1)[0]!);
+            renderList();
+            changed();
+          }),
+        );
+        return li;
+      }),
+    );
+    list.hidden = !items.length;
+    const size = items.reduce((n, i) => n + i.file.size, 0);
+    show(total, items.length > 1 ? `${plural(items.length, 'file')} · ${plural(pageCount(), 'page')} · ${kb(size)}` : '');
+  }
+
+  const close = (item: Item) => (item.kind === 'pdf' ? item.doc.loadingTask.destroy() : item.bitmap.close());
+
+  async function open(file: File): Promise<Item | string> {
+    try {
+      if (await isPdf(file)) {
+        const doc = await openPdf(file);
+        return { kind: 'pdf', file, doc, pages: doc.numPages };
+      }
+      return { kind: 'image', file, bitmap: await openImage(file), pages: 1 };
+    } catch (err) {
+      if (err instanceof PdfPasswordError)
+        return `"${file.name}" is password-protected. Open it, save a copy without the password, and add that instead.`;
+      return `Couldn't open "${file.name}". Use a PDF or a photo or scan: JPG, PNG, WebP, HEIC, AVIF, TIFF, GIF or BMP.`;
+    }
+  }
+
+  async function add(files: File[]) {
+    const errors: string[] = [];
+    for (const file of files) {
+      show(fileStatus, `Opening "${file.name}"…`);
+      const item = await open(file);
+      if (typeof item === 'string') {
+        errors.push(item);
+        continue;
+      }
+      if (pageCount() + item.pages > MAX_PAGES) {
+        errors.push(
+          `"${file.name}" would take this to ${pageCount() + item.pages} pages. The limit is ${MAX_PAGES}, so split it or leave some files out.`,
+        );
+        close(item);
+        continue;
+      }
+      items.push(item);
+    }
+    show(fileStatus, '');
+    show(fileError, errors.join(' '));
+    renderList();
+    changed();
+  }
+
+  // Files are opened one pick at a time so a slow HEIC decode cannot land out of order.
+  let queue = Promise.resolve();
+  const enqueue = (files: FileList | null | undefined) => {
+    const picked = [...(files ?? [])];
+    if (picked.length) queue = queue.then(() => add(picked));
+  };
+
+  fileInput.addEventListener('change', () => {
+    enqueue(fileInput.files);
+    fileInput.value = '';
+  });
+  drop.addEventListener('dragover', (e) => e.preventDefault());
+  drop.addEventListener('drop', (e) => {
+    e.preventDefault();
+    enqueue(e.dataTransfer?.files);
+  });
+  limit.addEventListener('change', changed);
+  kbInput.addEventListener('input', changed);
+  $<HTMLFormElement>('tool').addEventListener('submit', (e) => e.preventDefault());
+
+  readLimit();
+  // On a slow connection files can be picked before this script has loaded and started listening.
+  enqueue(fileInput.files);
+  fileInput.value = '';
+</script>
+
+<style>
+  .files {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* The rows are built by the script, so they carry no scoping attribute. */
+  .files :global(li) {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 8px 8px 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg);
+  }
+
+  .files :global(div) {
+    display: grid;
+    flex: 1;
+    min-width: 0;
+    line-height: 1.35;
+  }
+
+  .files :global(strong),
+  .files :global(span) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .files :global(strong) {
+    font-size: 0.9375rem;
+    font-weight: 550;
+  }
+
+  .files :global(span) {
+    color: var(--muted);
+    font-size: 0.8125rem;
+  }
+
+  .files :global(.btn) {
+    flex: none;
+    justify-content: center;
+    width: 40px;
+    min-height: 40px;
+    padding: 0;
+    font-size: 1.125rem;
+  }
+</style>

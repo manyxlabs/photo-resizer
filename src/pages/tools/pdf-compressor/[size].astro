@@ -1,0 +1,53 @@
+---
+import PdfCompressor from '../../../components/PdfCompressor.astro';
+import { PDF_FAQ } from '../../../data/faq';
+import { PDF_KB, sizeLabel, sizeSlug } from '../../../data/tools';
+import Tool from '../../../layouts/Tool.astro';
+
+export function getStaticPaths() {
+  return PDF_KB.map((kb) => ({ params: { size: sizeSlug(kb) }, props: { kb } }));
+}
+
+const { kb } = Astro.props as { kb: number };
+const size = sizeLabel(kb);
+---
+
+<Tool
+  path="/tools/pdf-compressor/"
+  variant={{ path: `/tools/pdf-compressor/${sizeSlug(kb)}/`, name: `PDF under ${size}` }}
+  title={`Compress PDF to ${size} Online, free and private - Manyx Labs`}
+  description={`Reduce a PDF to under ${size} for an exam, job or government form, and merge PDFs and photos into one. Free, no signup, and nothing is uploaded.`}
+  heading={`Compress a PDF to ${size}`}
+  faq={PDF_FAQ}
+>
+  <Fragment slot="lede">
+    Get your PDF under {size}, or join several PDFs and photos into one that fits. It all happens on your device;
+    nothing is uploaded.
+  </Fragment>
+
+  <PdfCompressor defaultKB={kb} />
+
+  <p class="sizes">
+    Other sizes:{' '}
+    {
+      PDF_KB.filter((s) => s !== kb).map((s, i) => (
+        <>
+          {i > 0 && ' · '}
+          <a href={`/tools/pdf-compressor/${sizeSlug(s)}/`}>{sizeLabel(s)}</a>
+        </>
+      ))
+    }
+  </p>
+</Tool>
+
+<style>
+  .sizes {
+    margin-top: 24px;
+    color: var(--muted);
+    font-size: 0.9375rem;
+  }
+
+  .sizes a {
+    color: var(--accent);
+  }
+</style>

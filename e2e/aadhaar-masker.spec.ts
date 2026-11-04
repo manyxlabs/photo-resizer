@@ -10,6 +10,8 @@ const pdfjsBuild = (f: string) => readFileSync(createRequire(import.meta.url).re
 // Recognition loads a 4 MB core and the language data on first use.
 test.setTimeout(120_000);
 const OCR = { timeout: 90_000 };
+// Chromium encodes a canvas to JPEG in idle time, which a busy machine may not have for seconds.
+const ENCODE = { timeout: 30_000 };
 
 type Rect = { x: number; y: number; w: number; h: number };
 
@@ -51,7 +53,7 @@ async function makeCard(page: Page, number: string | null) {
 
 async function save(page: Page, name: string) {
   const link = page.locator('#download');
-  await expect(link).toBeVisible({ timeout: 30_000 });
+  await expect(link).toBeVisible(ENCODE);
   const [file] = await Promise.all([page.waitForEvent('download'), link.click()]);
   const path = `${ARTIFACTS}/${name}`;
   copyFileSync(await file.path(), path);
@@ -184,7 +186,7 @@ test('a dragged box hides an area, a tap removes it, and Undo brings it back', a
   await page.mouse.move(box.x + 200 * k, box.y + 250 * k, { steps: 4 });
   await page.mouse.move(box.x + 300 * k, box.y + 275 * k, { steps: 4 });
   await page.mouse.up();
-  await expect(page.locator('#result')).toContainText('1 area hidden');
+  await expect(page.locator('#result')).toContainText('1 area hidden', ENCODE);
   const name = { x: 90, y: 232, w: 180, h: 34 };
   expect((await shades(page, (await save(page, 'manual-box.jpg')).bytes, [name])).rects[0]!.dark).toBeGreaterThan(0.98);
 
@@ -192,20 +194,20 @@ test('a dragged box hides an area, a tap removes it, and Undo brings it back', a
   await view.scrollIntoViewIfNeeded();
   const now = (await view.boundingBox())!;
   await page.mouse.click(now.x + 150 * k, now.y + 245 * k);
-  await expect(page.locator('#result')).toContainText('0 areas hidden');
+  await expect(page.locator('#result')).toContainText('0 areas hidden', ENCODE);
   expect((await shades(page, (await save(page, 'manual-box-removed.jpg')).bytes, [name])).rects[0]!.light).toBeGreaterThan(0.5);
 
   await page.getByRole('button', { name: 'Undo' }).click();
-  await expect(page.locator('#result')).toContainText('1 area hidden');
+  await expect(page.locator('#result')).toContainText('1 area hidden', ENCODE);
   await page.getByRole('button', { name: 'Undo' }).click();
-  await expect(page.locator('#result')).toContainText('0 areas hidden');
+  await expect(page.locator('#result')).toContainText('0 areas hidden', ENCODE);
   await expect(page.getByRole('button', { name: 'Undo' })).toBeDisabled();
 });
 
 test('the note is written across the copy', async ({ page }) => {
   const { file } = await makeCard(page, null);
   await page.locator('#file').setInputFiles(file);
-  await expect(page.locator('#result')).toContainText('0 areas hidden');
+  await expect(page.locator('#result')).toContainText('0 areas hidden', ENCODE);
   const before = await save(page, 'note-before.jpg');
   await page.locator('#note').fill('For KYC with ABC Bank only, 2 Nov 2026');
   await expect(page.locator('#download')).toBeHidden();

@@ -90,6 +90,8 @@ test.describe('the tool', () => {
   });
 
   test('a large camera-style photo is squeezed under the bank-exam limit', async ({ page }) => {
+    // Each try at a quality is a JPEG encode, which Chromium runs in idle time; a busy machine has little.
+    test.slow();
     await page.locator('#file').setInputFiles(await makeImage(page, 'noisy', 3000, 4000));
     await page.locator('#preset').selectOption('ibps-photo');
     const { bytes: out } = await download(page, 'ibps-photo');

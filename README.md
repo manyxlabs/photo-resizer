@@ -15,6 +15,11 @@ Each runs entirely in the browser: no file or detail is ever uploaded.
 
 `src/data/tools.ts` lists them, and the hub page, "More free tools" links and breadcrumbs come from it.
 The per-exam size guides at [/photo-size/](https://www.manyxlabs.com/photo-size/) come from the same data as the presets, `src/data/formSpecs.ts`, with each exam's official source.
+The "under N KB" pages for photos, signatures and PDFs come from the limits in `src/data/tools.ts`.
+
+Every page names a 1200 x 630 share image in `public/_resizer/og/`.
+They are screenshots of `src/pages/og/[slug].astro`, which exists only in dev; after changing a title, a tool or a spec, run `npm run og` and commit the images.
+The E2E suite fails on a page whose image is missing, a page left out of the sitemap or not linked, and a repeated title or description.
 
 The face finder and background remover (MediaPipe) and the OCR (Tesseract) run in the browser too.
 Their models are served from `public/_resizer/models/`, and their runtimes are fetched only when a tool needs them.
@@ -25,6 +30,7 @@ npm run dev       # http://localhost:4321
 npm run check     # type-check
 npm run build     # static output in dist/
 npm run test:e2e  # builds, serves and drives every tool in a real browser
+npm run og        # rebuilds the share images (set CHROMIUM as below if needed)
 ```
 
 E2E runs leave every generated file and a screenshot per case in `test-results/artifacts/`.

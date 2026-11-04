@@ -1,17 +1,16 @@
 ---
 import { RESIZER_FAQ } from '../../../data/faq';
 import Resizer from '../../../components/Resizer.astro';
-import { CHECKED, exams } from '../../../data/formSpecs';
-import { PHOTO_KB } from '../../../data/tools';
+import SizeLinks from '../../../components/SizeLinks.astro';
 import Tool from '../../../layouts/Tool.astro';
 ---
 
 <Tool
   path="/tools/photo-resizer/"
-  title="Photo & Signature Resizer for SSC, IBPS, UPSC and PAN forms - Manyx Labs"
-  description="Resize a photo or signature to the exact pixels and KB an exam, bank or government form asks for, from JPG, PNG, WebP, HEIC or TIFF. Free, no signup, and nothing is uploaded."
+  title="Photo & Signature Resizer in KB for Exam Forms"
+  description="Resize a photo or signature to the exact pixels and KB SSC, UPSC, IBPS or PAN forms ask for, from JPG, PNG, HEIC or TIFF. Free, and nothing is uploaded."
   faq={RESIZER_FAQ}
-  heading="Photo & signature resizer"
+  heading="Photo & signature resizer for exam forms"
   applicationCategory="MultimediaApplication"
 >
   <Fragment slot="lede">
@@ -21,58 +20,5 @@ import Tool from '../../../layouts/Tool.astro';
 
   <Resizer />
 
-  <nav class="guides" aria-labelledby="guides-h">
-    <h2 id="guides-h">Size guides</h2>
-    <ul>
-      {
-        exams.map((exam) => (
-          <li>
-            <a href={`/photo-size/${exam.id}/`}>
-              {exam.name} photo and signature size {CHECKED.year}
-            </a>
-          </li>
-        ))
-      }
-    </ul>
-    <p class="sizes">
-      Just need it under a size?{' '}
-      {
-        PHOTO_KB.map((kb, i) => (
-          <>
-            {i > 0 && ' · '}
-            <a href={`/tools/photo-resizer/${kb}-kb/`}>{kb} KB</a>
-          </>
-        ))
-      }
-    </p>
-  </nav>
+  <SizeLinks />
 </Tool>
-
-<style>
-  .guides {
-    margin-top: 40px;
-  }
-
-  .guides h2 {
-    font-size: 1.0625rem;
-    font-weight: 620;
-  }
-
-  .guides ul {
-    display: grid;
-    gap: 6px;
-    margin: 10px 0 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  .guides a {
-    color: var(--accent);
-  }
-
-  .sizes {
-    margin-top: 16px;
-    color: var(--muted);
-    font-size: 0.9375rem;
-  }
-</style>

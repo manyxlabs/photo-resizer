@@ -1,5 +1,7 @@
 ---
+import FormsAt from '../../../components/FormsAt.astro';
 import Resizer from '../../../components/Resizer.astro';
+import SizeLinks from '../../../components/SizeLinks.astro';
 import { RESIZER_FAQ } from '../../../data/faq';
 import { PHOTO_KB } from '../../../data/tools';
 import Tool from '../../../layouts/Tool.astro';
@@ -14,8 +16,8 @@ const { kb } = Astro.props as { kb: number };
 <Tool
   path="/tools/photo-resizer/"
   variant={{ path: `/tools/photo-resizer/${kb}-kb/`, name: `Photo under ${kb} KB` }}
-  title={`Resize Photo to ${kb} KB Online, free and private - Manyx Labs`}
-  description={`Reduce a photo or signature to under ${kb} KB, at the exact pixel or cm size your form asks for, from JPG, PNG, HEIC or WebP. Free, and nothing is uploaded.`}
+  title={`Resize Photo to ${kb} KB Online, Free`}
+  description={`Reduce a photo or signature to under ${kb} KB at the exact pixel or cm size your exam or job form asks for. Free, and nothing is uploaded.`}
   heading={`Resize a photo to ${kb} KB`}
   applicationCategory="MultimediaApplication"
   faq={RESIZER_FAQ}
@@ -25,29 +27,9 @@ const { kb } = Astro.props as { kb: number };
     pick your exam from the list. It all happens on your device; nothing is uploaded.
   </Fragment>
 
+  <FormsAt kb={kb} />
+
   <Resizer maxKB={kb} />
 
-  <p class="sizes">
-    Other limits:{' '}
-    {
-      PHOTO_KB.filter((s) => s !== kb).map((s, i) => (
-        <>
-          {i > 0 && ' · '}
-          <a href={`/tools/photo-resizer/${s}-kb/`}>{s} KB</a>
-        </>
-      ))
-    }
-  </p>
+  <SizeLinks />
 </Tool>
-
-<style>
-  .sizes {
-    margin-top: 24px;
-    color: var(--muted);
-    font-size: 0.9375rem;
-  }
-
-  .sizes a {
-    color: var(--accent);
-  }
-</style>

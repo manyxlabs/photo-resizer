@@ -7,7 +7,8 @@
     "build": "astro build",
     "preview": "astro preview",
     "check": "astro check",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "og": "astro build && node scripts/og.mjs"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.12",

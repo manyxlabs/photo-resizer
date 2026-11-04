@@ -8,9 +8,9 @@ import Tool from '../../../layouts/Tool.astro';
 
 <Tool
   path="/tools/pdf-compressor/"
-  title="Compress PDF to 100 KB, 200 KB or any size, and merge PDFs - free, no upload"
-  description="Shrink a PDF under the KB limit your exam, job or government form allows, and merge PDFs and photos into one PDF. Free, no signup, and nothing is uploaded."
-  heading="PDF compressor & merger"
+  title="Compress PDF to 100 KB, 200 KB or Any Size"
+  description="Shrink a PDF under the KB limit your exam, job or government form allows, and merge PDFs and photos into one. Free, no signup, and nothing is uploaded."
+  heading="Compress a PDF to any size, and merge PDFs"
   faq={PDF_FAQ}
 >
   <Fragment slot="lede">
@@ -26,7 +26,7 @@ import Tool from '../../../layouts/Tool.astro';
       PDF_KB.map((kb, i) => (
         <>
           {i > 0 && ' · '}
-          <a href={`/tools/pdf-compressor/${sizeSlug(kb)}/`}>{sizeLabel(kb)}</a>
+          <a href={`/tools/pdf-compressor/${sizeSlug(kb)}/`}>{`PDF under ${sizeLabel(kb)}`}</a>
         </>
       ))
     }

@@ -3,8 +3,7 @@ import sitemap from '@astrojs/sitemap';
 import { defineConfig } from 'astro/config';
 
 // These pages are served at www.manyxlabs.com alongside the website (manyxlabs/website),
-// whose Worker forwards /tools/photo-resizer*, /photo-size*, /_resizer/* and
-// /sitemap-resizer-* here. Every other path on that host is the website's, so this build
+// whose Worker forwards /tools*, /photo-size*, /_resizer/* and /sitemap-resizer-* here. Every other path on that host is the website's, so this build
 // keeps its bundles, sitemap and build id under names the website never uses.
 const commit = process.env.WORKERS_CI_COMMIT_SHA ?? '';
 

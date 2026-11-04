@@ -1,0 +1,71 @@
+---
+import { CHECKED, exams } from '../data/formSpecs';
+import { PHOTO_KB, SIGN_KB } from '../data/tools';
+
+interface Props {
+  /** Narrows the guides and sizes to photos or to scans, as the page's tool does. */
+  kind?: 'photo' | 'scan';
+}
+
+const { kind } = Astro.props;
+const guides = exams.filter((e) => !kind || e.specs.some((s) => s.scan === (kind === 'scan')));
+const sizes = [
+  ...(kind === 'scan' ? [] : PHOTO_KB.map((kb) => [`Photo under ${kb} KB`, `/tools/photo-resizer/${kb}-kb/`])),
+  ...(kind === 'photo' ? [] : SIGN_KB.map((kb) => [`Signature under ${kb} KB`, `/tools/signature-resizer/${kb}-kb/`])),
+].filter(([, href]) => href !== Astro.url.pathname);
+---
+
+<nav class="guides" aria-labelledby="guides-h">
+  <h2 id="guides-h">Size guides</h2>
+  <ul>
+    {
+      guides.map((exam) => (
+        <li>
+          <a href={`/photo-size/${exam.id}/`}>
+            {exam.name} photo and signature size {CHECKED.year}
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+  <p class="sizes">
+    Just need it under a size?{' '}
+    {
+      sizes.map(([name, href], i) => (
+        <>
+          {i > 0 && ' · '}
+          <a href={href}>{name}</a>
+        </>
+      ))
+    }
+  </p>
+</nav>
+
+<style>
+  .guides {
+    margin-top: 40px;
+  }
+
+  h2 {
+    font-size: 1.0625rem;
+    font-weight: 620;
+  }
+
+  ul {
+    display: grid;
+    gap: 6px;
+    margin: 10px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  a {
+    color: var(--accent);
+  }
+
+  .sizes {
+    margin-top: 16px;
+    color: var(--muted);
+    font-size: 0.9375rem;
+  }
+</style>

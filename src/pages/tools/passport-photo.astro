@@ -2,13 +2,14 @@
 import { PASSPORT_FAQ } from '../../data/faq';
 import Explainer from '../../components/Explainer.astro';
 import Resizer from '../../components/Resizer.astro';
+import SizeLinks from '../../components/SizeLinks.astro';
 import Tool from '../../layouts/Tool.astro';
 ---
 
 <Tool
   path="/tools/passport-photo/"
-  title="Passport Size Photo Maker: Indian passport, exam forms and print sheets - Manyx Labs"
-  description="Make a 630 × 810 Indian passport photo or an exam form photo from any picture, framed on your face, with an optional white background and a 6 × 4 inch print sheet. Free, and nothing is uploaded."
+  title="Passport Size Photo Maker Online, Free"
+  description="Make a 630 × 810 px Indian passport photo or exam photo from any picture, framed on your face, with a white background and a 6 × 4 inch print sheet. Free."
   faq={PASSPORT_FAQ}
   heading="Passport size photo maker"
   applicationCategory="MultimediaApplication"
@@ -36,4 +37,6 @@ import Tool from '../../layouts/Tool.astro';
     </li>
     <li>The face finder and background tool run in your browser; the photo never leaves your device.</li>
   </Explainer>
+
+  <SizeLinks kind="photo" />
 </Tool>

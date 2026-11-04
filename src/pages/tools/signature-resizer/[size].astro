@@ -1,0 +1,34 @@
+---
+import FormsAt from '../../../components/FormsAt.astro';
+import Resizer from '../../../components/Resizer.astro';
+import SizeLinks from '../../../components/SizeLinks.astro';
+import { SIGNATURE_FAQ } from '../../../data/faq';
+import { SIGN_KB } from '../../../data/tools';
+import Tool from '../../../layouts/Tool.astro';
+
+export function getStaticPaths() {
+  return SIGN_KB.map((kb) => ({ params: { size: `${kb}-kb` }, props: { kb } }));
+}
+
+const { kb } = Astro.props as { kb: number };
+---
+
+<Tool
+  path="/tools/signature-resizer/"
+  variant={{ path: `/tools/signature-resizer/${kb}-kb/`, name: `Signature under ${kb} KB` }}
+  title={`Resize Signature to ${kb} KB Online, Free`}
+  description={`Turn a phone photo of your signature into a clean scan under ${kb} KB, at the exact size your exam or PAN form asks for. Free, and nothing is uploaded.`}
+  heading={`Resize a signature to ${kb} KB`}
+  faq={SIGNATURE_FAQ}
+>
+  <Fragment slot="lede">
+    Sign on white paper, take a photo with your phone, and get a clean scan under {kb} KB. Set the size below, or pick
+    your form from the list. It all happens on your device; nothing is uploaded.
+  </Fragment>
+
+  <FormsAt kb={kb} scan />
+
+  <Resizer kind="scan" maxKB={kb} />
+
+  <SizeLinks kind="scan" />
+</Tool>

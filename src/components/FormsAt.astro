@@ -1,0 +1,39 @@
+---
+import { kbRange, specsCapped } from '../data/formSpecs';
+
+interface Props {
+  kb: number;
+  /** Only signatures and other scans, or only photos; both when unset. */
+  scan?: boolean;
+}
+
+const { kb, scan } = Astro.props;
+const capped = specsCapped(kb, scan);
+---
+
+{
+  capped.length > 0 && (
+    <p class="forms">
+      {`Forms that cap ${scan ? 'the signature' : 'a file'} at ${kb} KB: `}
+      {capped.map(({ exam, spec }, i) => (
+        <>
+          {i > 0 && ' · '}
+          <a href={`/photo-size/${exam.id}/#${spec.id}`}>{`${exam.name} ${spec.label.toLowerCase()} (${spec.width} × ${spec.height} px, ${kbRange(spec)})`}</a>
+        </>
+      ))}
+      . Pick yours from the list below to get its exact size.
+    </p>
+  )
+}
+
+<style>
+  .forms {
+    margin-top: 16px;
+    color: var(--muted);
+    font-size: 0.9375rem;
+  }
+
+  a {
+    color: var(--accent);
+  }
+</style>

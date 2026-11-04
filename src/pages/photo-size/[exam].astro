@@ -203,6 +203,13 @@ const steps: [name: string, text: string][] = [
     align-items: center;
   }
 
+  /* A long spec name wraps on a phone; centred and tighter, it still reads as one button. */
+  .go .btn {
+    padding-block: 8px;
+    line-height: 1.35;
+    text-align: center;
+  }
+
   .spec:first-of-type {
     margin-top: 32px;
   }

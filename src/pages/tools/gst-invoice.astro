@@ -633,6 +633,11 @@ const special: [string, string][] = [
 
   /* A phone shows the page scaled down whole, as it will print, rather than with columns cut off. */
   @media screen {
+    /* Until the script zooms it to fit, the sheet would widen the whole page on a phone. */
+    .sheets {
+      overflow-x: clip;
+    }
+
     .invoice {
       width: 680px;
     }

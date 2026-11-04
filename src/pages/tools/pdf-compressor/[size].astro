@@ -15,7 +15,7 @@ const size = sizeLabel(kb);
 <Tool
   path="/tools/pdf-compressor/"
   variant={{ path: `/tools/pdf-compressor/${sizeSlug(kb)}/`, name: `PDF under ${size}` }}
-  title={`Compress PDF to ${size} Online, free and private - Manyx Labs`}
+  title={`Compress PDF to ${size} Online, Free`}
   description={`Reduce a PDF to under ${size} for an exam, job or government form, and merge PDFs and photos into one. Free, no signup, and nothing is uploaded.`}
   heading={`Compress a PDF to ${size}`}
   faq={PDF_FAQ}
@@ -33,7 +33,7 @@ const size = sizeLabel(kb);
       PDF_KB.filter((s) => s !== kb).map((s, i) => (
         <>
           {i > 0 && ' · '}
-          <a href={`/tools/pdf-compressor/${sizeSlug(s)}/`}>{sizeLabel(s)}</a>
+          <a href={`/tools/pdf-compressor/${sizeSlug(s)}/`}>{`PDF under ${sizeLabel(s)}`}</a>
         </>
       ))
     }

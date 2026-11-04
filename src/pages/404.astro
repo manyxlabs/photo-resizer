@@ -1,13 +1,20 @@
 ---
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
 import Base from '../layouts/Base.astro';
 ---
 
-<Base title="Page not found - Manyx Labs" description="This page does not exist." noindex>
+<Base title="Page not found" description="This page does not exist." noindex>
+  <Header />
   <main class="wrap">
     <p class="code">404</p>
     <h1>This page doesn't exist.</h1>
-    <a href="/">Back to Manyx Labs &rarr;</a>
+    <p>
+      <a href="/tools/">See all free tools &rarr;</a>
+      <a href="/photo-size/">Photo and signature size guides &rarr;</a>
+    </p>
   </main>
+  <Footer />
 </Base>
 
 <style>
@@ -16,7 +23,7 @@ import Base from '../layouts/Base.astro';
     flex-direction: column;
     justify-content: center;
     gap: 16px;
-    min-height: 100svh;
+    min-height: 60svh;
   }
 
   .code {
@@ -28,6 +35,12 @@ import Base from '../layouts/Base.astro';
   h1 {
     font-size: clamp(1.75rem, 5vw, 2.5rem);
     letter-spacing: -0.03em;
+  }
+
+  p:last-child {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 24px;
   }
 
   a {

@@ -1,5 +1,5 @@
 ---
-import { CHECKED, exams, reportHref } from '../data/formSpecs';
+import { CHECKED, examOf, exams, outputLine, reportHref } from '../data/formSpecs';
 
 interface Props {
   /**
@@ -18,6 +18,8 @@ const offered = ordered
   .map((exam) => ({ exam, specs: exam.specs.filter((s) => !kind || s.scan === (kind === 'scan')) }))
   .filter((g) => g.specs.length);
 const accepts = 'JPG, PNG, WebP, HEIC (iPhone), AVIF, TIFF, GIF or BMP';
+// Rendered for the preset the page opens on, so the script filling them in shifts nothing.
+const first = maxKB === undefined ? offered[0]!.specs[0]! : undefined;
 ---
 
 <form id="tool" class="tool" data-kind={kind ?? ''} novalidate>
@@ -67,10 +69,10 @@ const accepts = 'JPG, PNG, WebP, HEIC (iPhone), AVIF, TIFF, GIF or BMP';
       <label class="field">Max KB <input id="max" type="number" min="1" step="any" value={maxKB ?? (kind === 'scan' ? '20' : '50')} /></label>
     </div>
     <p id="spec-error" class="error" role="alert" hidden></p>
-    <p id="spec" class="hint"></p>
+    <p id="spec" class="hint">{first && outputLine(first)}</p>
     <p class="hint">
-      <span id="source">
-        Source: <a id="source-link" href=""></a>, checked {`${CHECKED.month} ${CHECKED.year}`}.{' '}
+      <span id="source" hidden={!first}>
+        Source: <a id="source-link" href={first && examOf(first).source.url}>{first && examOf(first).source.label}</a>, checked {`${CHECKED.month} ${CHECKED.year}`}.{' '}
       </span>
       Rules change, so check yours before you submit. <a id="report" href={reportHref()}>Spec wrong or changed?</a>
     </p>
@@ -114,7 +116,7 @@ const accepts = 'JPG, PNG, WebP, HEIC (iPhone), AVIF, TIFF, GIF or BMP';
   import { fitJpeg, maxBytes, minBytes, withDpi } from '../lib/jpeg';
   import { cleanScan, type Ink } from '../lib/scan';
   import type { Box } from '../lib/vision';
-  import { examOf, exams, kbRange, reportHref, type FormSpec } from '../data/formSpecs';
+  import { examOf, exams, outputLine, reportHref, type FormSpec } from '../data/formSpecs';
 
   const formSpecs = exams.flatMap((e) => e.specs);
 
@@ -367,9 +369,7 @@ const accepts = 'JPG, PNG, WebP, HEIC (iPhone), AVIF, TIFF, GIF or BMP';
       return;
     }
     show(specError, '');
-    const cm = t.physical ? ` (${t.physical.w} × ${t.physical.h} cm at ${t.physical.dpi} DPI)` : '';
-    const name = t.fileName ? `, named ${t.fileName}.jpg` : '';
-    specLine.textContent = `Output: ${t.width} × ${t.height} px${cm}, ${kbRange(t)}, JPG${name}.`;
+    specLine.textContent = outputLine(t);
     const changedShape = !target || target.width !== t.width || target.height !== t.height || target.scan !== t.scan;
     target = t;
     canvas.width = t.width;

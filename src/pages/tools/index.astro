@@ -1,14 +1,16 @@
 ---
 import Footer from '../../components/Footer.astro';
 import Header from '../../components/Header.astro';
+import SizeLinks from '../../components/SizeLinks.astro';
 import { tools } from '../../data/tools';
 import Base from '../../layouts/Base.astro';
 import { breadcrumbs } from '../../seo';
 ---
 
 <Base
-  title="Free tools for Indian forms and paperwork - Manyx Labs"
-  description="Free tools that run in your browser: photo, signature and passport photo resizing, PDF compression, Aadhaar masking, rent receipts and GST invoices. Nothing is uploaded."
+  title="Free Tools for Indian Forms and Paperwork"
+  description="Free tools that run in your browser: photo, signature and passport photo resizing, PDF compression, Aadhaar masking, rent receipts and GST invoices."
+  og="tools"
   schema={[
     {
       '@type': 'ItemList',
@@ -39,6 +41,8 @@ import { breadcrumbs } from '../../seo';
         ))
       }
     </ul>
+
+    <SizeLinks />
   </main>
 
   <Footer />

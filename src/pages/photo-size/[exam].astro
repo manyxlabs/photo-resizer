@@ -1,7 +1,8 @@
 ---
 import Footer from '../../components/Footer.astro';
 import Header from '../../components/Header.astro';
-import { CHECKED, exams, kbRange, reportHref, type Exam } from '../../data/formSpecs';
+import { CHECKED, exams, kbRange, reportHref, type Exam, type FormSpec } from '../../data/formSpecs';
+import { PHOTO_KB, SIGN_KB } from '../../data/tools';
 import Base from '../../layouts/Base.astro';
 import { breadcrumbs } from '../../seo';
 
@@ -12,18 +13,65 @@ export function getStaticPaths() {
 const { exam } = Astro.props as { exam: Exam };
 // "Signature (three in one image)" reads as "signature" in a sentence.
 const noun = (label: string) => label.replace(/ \(.*\)$/, '').toLowerCase();
-const what = new Intl.ListFormat('en').format(exam.specs.map((s) => noun(s.label)));
+const list = (words: string[]) => new Intl.ListFormat('en').format(words);
+const what = list(exam.specs.map((s) => noun(s.label)));
 const title = `${exam.name} photo and signature size ${CHECKED.year}`;
+const page = `/photo-size/${exam.id}/`;
+const summary = exam.specs
+  .slice(0, 2)
+  .map((s) => `${noun(s.label)} ${s.width} × ${s.height} px, ${kbRange(s)}`)
+  .join('; ');
+// The longest description that still fits a search result (155 characters).
+const description = [`${exam.name} (${exam.covers})`, `${exam.name} ${CHECKED.year}`]
+  .map((who) => `${who}: ${summary}${exam.specs.length > 2 ? ', and more' : ''}. From the official notice, with a free tool to resize yours.`)
+  .find((d, i, all) => d.length <= 155 || i === all.length - 1)!;
+const toolFor = (spec: FormSpec) => (spec.scan ? '/tools/signature-resizer/' : '/tools/passport-photo/');
+const sizePage = (spec: FormSpec) =>
+  spec.scan
+    ? SIGN_KB.includes(spec.maxKB) && { name: `Signature under ${spec.maxKB} KB`, href: `/tools/signature-resizer/${spec.maxKB}-kb/` }
+    : PHOTO_KB.includes(spec.maxKB) && { name: `Photo under ${spec.maxKB} KB`, href: `/tools/photo-resizer/${spec.maxKB}-kb/` };
+const photos = exam.specs.filter((s) => !s.scan);
+const scans = exam.specs.filter((s) => s.scan);
+const named = exam.specs.filter((s) => s.fileName).map((s) => `${s.fileName}.jpg`);
+const steps: [name: string, text: string][] = [
+  [
+    'Take the picture',
+    [
+      photos.length > 0 &&
+        'For the photo, stand against a plain white wall in even light and have someone take it from about 1.5 metres away.',
+      scans.length > 0 &&
+        `For the ${list(scans.map((s) => noun(s.label)))}, use plain white paper and dark ink, and photograph it from straight above in good light.`,
+    ]
+      .filter(Boolean)
+      .join(' '),
+  ],
+  [
+    `Open it with the ${exam.name} preset`,
+    `Press the button under each size above. It opens the tool on that preset, which sets the pixels${exam.specs.some((s) => s.physical) ? ', DPI' : ''} and KB from the notice.`,
+  ],
+  [
+    'Adjust and download',
+    `Drag or zoom to frame it, then download the JPG. It already fits the KB range${named.length ? ` and is named ${list(named)}` : ''}.`,
+  ],
+  ['Upload and check', `Upload it to the ${exam.name} form and check the preview before you submit.`],
+];
 ---
 
 <Base
-  title={`${title} - Manyx Labs`}
-  description={`The exact pixels, KB and format ${exam.name} asks for (${exam.covers}), from the official notice, and a free tool that resizes your ${what} to fit. Nothing is uploaded.`}
+  title={title}
+  description={description}
+  og={`guide-${exam.id}`}
   schema={[
+    {
+      '@type': 'HowTo',
+      name: `How to make your ${exam.name} ${what}`,
+      tool: [...new Set(exam.specs.map((s) => (s.scan ? 'Signature cleaner' : 'Passport photo maker')))].map((name) => ({ '@type': 'HowToTool', name })),
+      step: steps.map(([name, text], i) => ({ '@type': 'HowToStep', position: i + 1, name, text, url: `${new URL(page, Astro.site)}#step-${i + 1}` })),
+    },
     breadcrumbs([
       ['Manyx Labs', '/'],
       ['Size guides', '/photo-size/'],
-      [title, `/photo-size/${exam.id}/`],
+      [title, page],
     ]),
   ]}
 >
@@ -37,26 +85,45 @@ const title = `${exam.name} photo and signature size ${CHECKED.year}`;
     </p>
 
     {
-      exam.specs.map((spec) => (
-        <section class="spec glass" aria-labelledby={spec.id}>
-          <h2 id={spec.id}>{spec.label}</h2>
-          <dl>
-            <dt>Size</dt>
-            <dd>
-              {spec.width} × {spec.height} pixels
-              {spec.physical && ` (${spec.physical.w} × ${spec.physical.h} cm at ${spec.physical.dpi} DPI)`}
-            </dd>
-            <dt>File size</dt>
-            <dd>{kbRange(spec)}</dd>
-            <dt>Format</dt>
-            <dd>JPG{spec.fileName && `, named ${spec.fileName}.jpg`}</dd>
-          </dl>
-          <a class="btn primary" href={`/tools/${spec.scan ? 'signature-resizer' : 'passport-photo'}/?preset=${spec.id}`}>
-            {spec.scan ? 'Open in the signature cleaner' : 'Open in the photo maker'}
-          </a>
-        </section>
-      ))
+      exam.specs.map((spec) => {
+        const size = sizePage(spec);
+        return (
+          <section class="spec glass" aria-labelledby={`${spec.id}-h`} id={spec.id}>
+            <h2 id={`${spec.id}-h`}>{spec.label}</h2>
+            <dl>
+              <dt>Size</dt>
+              <dd>
+                {spec.width} × {spec.height} pixels
+                {spec.physical && ` (${spec.physical.w} × ${spec.physical.h} cm at ${spec.physical.dpi} DPI)`}
+              </dd>
+              <dt>File size</dt>
+              <dd>{kbRange(spec)}</dd>
+              <dt>Format</dt>
+              <dd>JPG{spec.fileName && `, named ${spec.fileName}.jpg`}</dd>
+            </dl>
+            <div class="go">
+              <a class="btn primary" href={`${toolFor(spec)}?preset=${spec.id}`}>
+                {`Resize your ${exam.name} ${noun(spec.label)}`}
+              </a>
+              {size && <a href={size.href}>{size.name}</a>}
+            </div>
+          </section>
+        );
+      })
     }
+
+    <section aria-labelledby="how">
+      <h2 id="how">{`How to make your ${exam.name} ${what}`}</h2>
+      <ol class="notes">
+        {
+          steps.map(([name, text], i) => (
+            <li id={`step-${i + 1}`}>
+              <strong>{name}.</strong> {text}
+            </li>
+          ))
+        }
+      </ol>
+    </section>
 
     <section aria-labelledby="notes">
       <h2 id="notes">Good to know</h2>
@@ -78,7 +145,7 @@ const title = `${exam.name} photo and signature size ${CHECKED.year}`;
           .map((e, i) => (
             <>
               {i > 0 && ' · '}
-              <a href={`/photo-size/${e.id}/`}>{e.name}</a>
+              <a href={`/photo-size/${e.id}/`}>{`${e.name} photo and signature size`}</a>
             </>
           ))
       }
@@ -127,6 +194,13 @@ const title = `${exam.name} photo and signature size ${CHECKED.year}`;
     margin-top: 16px;
     padding: 20px;
     border-radius: 20px;
+  }
+
+  .go {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 20px;
+    align-items: center;
   }
 
   .spec:first-of-type {

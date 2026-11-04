@@ -1,8 +1,8 @@
 ---
 import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
-import { toolAt, tools } from '../data/tools';
-import { breadcrumbs, organization } from '../seo';
+import { slugOf, toolAt, tools } from '../data/tools';
+import { breadcrumbs, ogImage, organization } from '../seo';
 import Base from './Base.astro';
 
 interface Props {
@@ -20,21 +20,27 @@ interface Props {
 
 const { path, title, description, heading, applicationCategory = 'UtilitiesApplication', faq = [], variant } = Astro.props;
 const tool = toolAt(path);
+const og = slugOf(tool);
 ---
 
 <Base
   title={title}
   description={description}
+  og={og}
   schema={[
     {
       '@type': 'WebApplication',
-      name: tool.name,
+      name: variant?.name ?? tool.name,
+      description,
       url: new URL(variant?.path ?? path, Astro.site).href,
+      image: ogImage(og),
       applicationCategory,
       operatingSystem: 'Any',
       browserRequirements: 'Requires JavaScript',
+      inLanguage: 'en-IN',
+      isAccessibleForFree: true,
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'INR' },
-      publisher: { '@id': organization['@id'] },
+      publisher: organization,
     },
     breadcrumbs([['Manyx Labs', '/'], ['Tools', '/tools/'], [tool.name, path], ...(variant ? [[variant.name, variant.path] as [string, string]] : [])]),
     ...(faq.length

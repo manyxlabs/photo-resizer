@@ -1,0 +1,240 @@
+---
+// The 1200 x 630 share card of every page, which `npm run og` screenshots into
+// public/_resizer/og/. Built only in dev: the PNGs are what is published.
+import '@fontsource-variable/inter';
+import { CHECKED, exams, kbRange, type Exam, type FormSpec } from '../../data/formSpecs';
+import { slugOf, tools } from '../../data/tools';
+
+type Card = { eyebrow: string; title: string; rows: [label: string, value: string][] };
+
+// Astro hoists getStaticPaths out of the page, so everything it uses lives inside it.
+export function getStaticPaths() {
+  if (!import.meta.env.DEV) return [];
+  const specs = exams.flatMap((exam) => exam.specs.map((spec) => ({ exam, spec })));
+  const short = (s: FormSpec) => s.label.replace(/ \(.*\)$/, '');
+  const specRow = (exam: Exam, s: FormSpec): [string, string] => [`${exam.name} ${short(s).toLowerCase()}`, `${s.width} × ${s.height} px, ${kbRange(s)}`];
+  const rows = (...ids: string[]) =>
+    ids.map((id) => {
+      const found = specs.find((s) => s.spec.id === id);
+      if (!found) throw new Error(`No preset ${id}`);
+      return specRow(found.exam, found.spec);
+    });
+
+  // Titled as the pages' headings, which say what people search for better than the tools' names.
+  const toolCards: Record<string, Omit<Card, 'eyebrow'>> = {
+    'photo-resizer': { title: 'Photo & signature resizer for exam forms', rows: rows('ibps-photo', 'upsc-photo', 'pan-photo', 'ssc-sign') },
+    'signature-resizer': { title: 'Signature resizer & cleaner', rows: rows('ssc-sign', 'ibps-sign', 'pan-sign', 'upsc-sign') },
+    'passport-photo': {
+      title: 'Passport size photo maker',
+      rows: [...rows('passport-photo'), ['Print sheet', '6 × 4 inch, 300 DPI'], ['Background', 'Can be made white']],
+    },
+    'pdf-compressor': {
+      title: 'Compress a PDF to any size, and merge PDFs',
+      rows: [['Fits under', '100 KB, 200 KB, 500 KB, 1 MB'], ['Merges', 'PDFs and photos into one'], ['Keeps', 'Selectable text when it fits']],
+    },
+    'aadhaar-masker': {
+      title: 'Mask your Aadhaar number',
+      rows: [['Aadhaar number', 'XXXX XXXX 4821'], ['Finds it', 'By OCR, on your device'], ['PDFs', 'Flattened, no hidden text']],
+    },
+    'rent-receipt': {
+      title: 'Rent receipt generator for HRA',
+      rows: [['Rent', '₹15,000 a month'], ['Months', 'April to March, one each'], ['In words', 'Rupees Fifteen Thousand Only'], ['Revenue stamp', 'Box for cash over ₹5,000']],
+    },
+    'gst-invoice': {
+      title: 'GST invoice generator',
+      rows: [['Within a state', 'CGST 9% + SGST 9%'], ['Between states', 'IGST 18%'], ['Invoice', 'Rule 46 fields, as a PDF']],
+    },
+  };
+  // Rows from each guide's notes, so a guide with one preset still fills its card.
+  const guideExtra: Record<string, Card['rows']> = {
+    ssc: [['SSC photo', 'Taken live in the form'], ['Signature in cm', '6.0 × 2.0 cm at 200 DPI']],
+    passport: [['Background', 'White'], ['Face', '80 to 85% of the photo']],
+  };
+
+  const cards: Record<string, Card> = {
+    tools: {
+      eyebrow: 'Free tools',
+      title: 'Free tools for Indian forms and paperwork',
+      rows: [
+        ['Photos', 'Exam, PAN and passport sizes'],
+        ['PDFs', 'Compressed to any KB, merged'],
+        ['Aadhaar', 'First 8 digits masked'],
+        ['Rent and GST', 'Receipts and tax invoices'],
+      ],
+    },
+    'photo-size': {
+      eyebrow: 'Size guides',
+      title: `Photo and signature size for Indian forms ${CHECKED.year}`,
+      rows: rows('ibps-photo', 'upsc-photo', 'passport-photo', 'pan-photo'),
+    },
+    ...Object.fromEntries(
+      tools.map((t) => {
+        const slug = slugOf(t);
+        if (!toolCards[slug]) throw new Error(`No share card for ${slug}`);
+        return [slug, { eyebrow: 'Free tool', ...toolCards[slug] }];
+      }),
+    ),
+    ...Object.fromEntries(
+      exams.map((e) => [`guide-${e.id}`, { eyebrow: 'Size guide', title: `${e.name} photo and signature size ${CHECKED.year}`, rows: [...e.specs.slice(0, 4).map((s) => specRow(e, s)), ...(guideExtra[e.id] ?? [])] }]),
+    ),
+  };
+
+  return Object.entries(cards).map(([slug, card]) => ({ params: { slug }, props: { card } }));
+}
+
+const { card } = Astro.props as { card: Card };
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="robots" content="noindex" />
+    <title>{card.title}</title>
+  </head>
+  <body>
+    <div class="card">
+      <div class="left">
+        <p class="brand">
+          <svg width="40" height="40" viewBox="0 0 48 48" aria-hidden="true">
+            <defs>
+              <mask id="mx" maskUnits="userSpaceOnUse" x="0" y="0" width="48" height="48">
+                <rect width="48" height="48" fill="#fff"></rect>
+                <circle cx="24" cy="24" r="9" fill="#000"></circle>
+              </mask>
+            </defs>
+            <g mask="url(#mx)" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round">
+              <path d="M9 9 C 22 20, 26 28, 39 39"></path>
+              <path d="M39 9 C 26 20, 22 28, 9 39"></path>
+            </g>
+            <circle cx="24" cy="24" r="5" fill="#059669"></circle>
+          </svg>
+          Manyx Labs
+        </p>
+        <div>
+          <p class="eyebrow">{card.eyebrow}</p>
+          <h1>{card.title}</h1>
+        </div>
+        <p class="foot">Free · Runs in your browser · Nothing is uploaded</p>
+      </div>
+      <dl class="panel">
+        {
+          card.rows.map(([label, value]) => (
+            <div>
+              <dt>{label}</dt>
+              <dd>{value}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </div>
+  </body>
+</html>
+
+<style>
+  html,
+  body {
+    margin: 0;
+  }
+
+  body {
+    width: 1200px;
+    height: 630px;
+    overflow: hidden;
+    background:
+      radial-gradient(42rem 32rem at 8% 0%, rgb(16 185 129 / 0.22), transparent 70%),
+      radial-gradient(38rem 30rem at 100% 10%, rgb(56 189 248 / 0.22), transparent 70%),
+      radial-gradient(44rem 34rem at 60% 110%, rgb(167 139 250 / 0.2), transparent 70%),
+      #f5f6f8;
+    color: #1d1d1f;
+    font-family: 'Inter Variable', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .card {
+    display: grid;
+    grid-template-columns: 1fr 440px;
+    gap: 56px;
+    align-items: center;
+    box-sizing: border-box;
+    height: 100%;
+    padding: 64px 72px;
+  }
+
+  .left {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    align-items: center;
+    height: 100%;
+  }
+
+  p,
+  h1,
+  dl,
+  dd {
+    margin: 0;
+  }
+
+  .brand {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    font-size: 30px;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+  }
+
+  .eyebrow {
+    color: #047857;
+    font-size: 22px;
+    font-weight: 650;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    margin-top: 14px;
+    font-size: 60px;
+    font-weight: 720;
+    line-height: 1.06;
+    letter-spacing: -0.035em;
+    text-wrap: balance;
+  }
+
+  .foot {
+    color: #57575c;
+    font-size: 22px;
+    font-weight: 500;
+  }
+
+  .panel {
+    display: grid;
+    gap: 22px;
+    padding: 34px 32px;
+    border: 1px solid rgb(255 255 255 / 0.9);
+    border-radius: 28px;
+    background: rgb(255 255 255 / 0.62);
+    box-shadow:
+      inset 0 1px 0 #fff,
+      0 24px 60px -28px rgb(15 23 42 / 0.35);
+  }
+
+  .panel div + div {
+    padding-top: 20px;
+    border-top: 1px solid #e4e4e8;
+  }
+
+  dt {
+    color: #57575c;
+    font-size: 19px;
+    font-weight: 550;
+  }
+
+  dd {
+    margin-top: 4px;
+    font-size: 25px;
+    font-weight: 650;
+    letter-spacing: -0.015em;
+    font-variant-numeric: tabular-nums;
+  }
+</style>

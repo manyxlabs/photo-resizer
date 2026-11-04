@@ -7,9 +7,15 @@ import { breadcrumbs } from '../../seo';
 ---
 
 <Base
-  title={`Photo and signature sizes for Indian forms ${CHECKED.year} - Manyx Labs`}
-  description={`The pixels, KB and format ${[...new Set(exams.map((e) => e.name.split(' (')[0]))].join(', ')} ask for, taken from the official notices, with a free tool to resize your files.`}
+  title={`Photo and Signature Size for Indian Forms ${CHECKED.year}`}
+  description={`The pixels, KB and format ${new Intl.ListFormat('en').format(new Set(exams.map((e) => e.name.split(' (')[0])))} ask for, taken from the official notices, with a free tool to resize your files.`}
+  og="photo-size"
   schema={[
+    {
+      '@type': 'ItemList',
+      name: 'Photo and signature size guides',
+      itemListElement: exams.map((e, i) => ({ '@type': 'ListItem', position: i + 1, name: e.name, url: new URL(`/photo-size/${e.id}/`, Astro.site).href })),
+    },
     breadcrumbs([
       ['Manyx Labs', '/'],
       ['Size guides', '/photo-size/'],

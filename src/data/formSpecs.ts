@@ -165,7 +165,15 @@ export const exams: Exam[] = [
 
 export const examOf = (spec: FormSpec) => exams.find((e) => e.specs.includes(spec))!;
 
+/** The presets an "under N KB" page serves: those whose limit is exactly N, of one kind or both. */
+export const specsCapped = (kb: number, scan?: boolean) =>
+  exams.flatMap((exam) => exam.specs.filter((s) => s.maxKB === kb && (scan === undefined || s.scan === scan)).map((spec) => ({ exam, spec })));
+
 export const kbRange = ({ minKB, maxKB }: Pick<FormSpec, 'minKB' | 'maxKB'>) => (minKB ? `${minKB} to ${maxKB} KB` : `up to ${maxKB} KB`);
+
+/** What a download will be, as the tool states it under the form picker. */
+export const outputLine = (t: Pick<FormSpec, 'width' | 'height' | 'minKB' | 'maxKB' | 'physical' | 'fileName'>) =>
+  `Output: ${t.width} × ${t.height} px${t.physical ? ` (${t.physical.w} × ${t.physical.h} cm at ${t.physical.dpi} DPI)` : ''}, ${kbRange(t)}, JPG${t.fileName ? `, named ${t.fileName}.jpg` : ''}.`;
 
 export function reportHref(spec?: FormSpec) {
   const what = spec ? `${examOf(spec).name} ${spec.label.toLowerCase()}` : 'a form';

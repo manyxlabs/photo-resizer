@@ -209,7 +209,7 @@ for (const exam of GUIDES) {
       const named = /named (\S+\.jpg)/.exec(await dd.nth(2).innerText());
 
       const scan = !/photo/i.test(label);
-      await spec.getByRole('link', { name: scan ? 'Open in the signature cleaner' : 'Open in the photo maker' }).click();
+      await spec.getByRole('link', { name: /^Resize your / }).click();
       await expect(page).toHaveURL(scan ? /\/tools\/signature-resizer\/\?preset=/ : /\/tools\/passport-photo\/\?preset=/);
       await page.locator('#file').setInputFiles(await makeImage(page, scan ? 'flat' : 'portrait', 1500, 1500));
       const { bytes, fileName } = await download(page, `${exam}-${i}`);

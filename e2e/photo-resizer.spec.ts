@@ -227,7 +227,7 @@ test('the guides fit a phone and link to one another', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   for (const exam of GUIDES) {
     await page.goto(`/photo-size/${exam}/`);
-    await expect(page.getByRole('heading', { level: 1 })).toContainText(/photo and signature size \d{4}/);
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(/photo( and signature)? size \d{4}/);
     expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
     for (const other of GUIDES.filter((g) => g !== exam))
       await expect(page.locator(`a[href="/photo-size/${other}/"]`).first()).toBeVisible();

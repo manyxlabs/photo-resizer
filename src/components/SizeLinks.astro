@@ -1,5 +1,5 @@
 ---
-import { CHECKED, exams } from '../data/formSpecs';
+import { exams, guideTitle } from '../data/formSpecs';
 import { PHOTO_KB, SIGN_KB } from '../data/tools';
 
 interface Props {
@@ -21,9 +21,7 @@ const sizes = [
     {
       guides.map((exam) => (
         <li>
-          <a href={`/photo-size/${exam.id}/`}>
-            {exam.name} photo and signature size {CHECKED.year}
-          </a>
+          <a href={`/photo-size/${exam.id}/`}>{guideTitle(exam)}</a>
         </li>
       ))
     }

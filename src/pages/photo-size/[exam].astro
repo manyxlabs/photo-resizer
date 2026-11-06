@@ -1,7 +1,7 @@
 ---
 import Footer from '../../components/Footer.astro';
 import Header from '../../components/Header.astro';
-import { CHECKED, exams, kbRange, reportHref, type Exam, type FormSpec } from '../../data/formSpecs';
+import { CHECKED, exams, guideTitle, kbRange, reportHref, type Exam, type FormSpec } from '../../data/formSpecs';
 import { PHOTO_KB, SIGN_KB } from '../../data/tools';
 import Base from '../../layouts/Base.astro';
 import { breadcrumbs } from '../../seo';
@@ -15,14 +15,16 @@ const { exam } = Astro.props as { exam: Exam };
 const noun = (label: string) => label.replace(/ \(.*\)$/, '').toLowerCase();
 const list = (words: string[]) => new Intl.ListFormat('en').format(words);
 const what = list(exam.specs.map((s) => noun(s.label)));
-const title = `${exam.name} photo and signature size ${CHECKED.year}`;
+const title = guideTitle(exam);
+// `covers` starts a line on the index; mid-sentence its first word loses the capital, unless it is an acronym.
+const covers = exam.covers.replace(/^[A-Z](?=[a-z])/, (c) => c.toLowerCase());
 const page = `/photo-size/${exam.id}/`;
 const summary = exam.specs
   .slice(0, 2)
   .map((s) => `${noun(s.label)} ${s.width} × ${s.height} px, ${kbRange(s)}`)
   .join('; ');
 // The longest description that still fits a search result (155 characters).
-const description = [`${exam.name} (${exam.covers})`, `${exam.name} ${CHECKED.year}`]
+const description = [`${exam.name} (${covers})`, `${exam.name} ${CHECKED.year}`]
   .map((who) => `${who}: ${summary}${exam.specs.length > 2 ? ', and more' : ''}. From the official notice, with a free tool to resize yours.`)
   .find((d, i, all) => d.length <= 155 || i === all.length - 1)!;
 const toolFor = (spec: FormSpec) => (spec.scan ? '/tools/signature-resizer/' : '/tools/passport-photo/');
@@ -81,7 +83,7 @@ const steps: [name: string, text: string][] = [
     <p class="eyebrow">Form size guide</p>
     <h1>{title}</h1>
     <p class="lede">
-      {`What ${exam.name} asks for (${exam.covers}), taken from the official notice and checked in ${CHECKED.month} ${CHECKED.year}.`}
+      {`What ${exam.name} asks for (${covers}), taken from the official notice and checked in ${CHECKED.month} ${CHECKED.year}.`}
     </p>
 
     {
@@ -145,7 +147,7 @@ const steps: [name: string, text: string][] = [
           .map((e, i) => (
             <>
               {i > 0 && ' · '}
-              <a href={`/photo-size/${e.id}/`}>{`${e.name} photo and signature size`}</a>
+              <a href={`/photo-size/${e.id}/`}>{guideTitle(e)}</a>
             </>
           ))
       }

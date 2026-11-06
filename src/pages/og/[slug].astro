@@ -2,7 +2,7 @@
 // The 1200 x 630 share card of every page, which `npm run og` screenshots into
 // public/_resizer/og/. Built only in dev: the PNGs are what is published.
 import '@fontsource-variable/inter';
-import { CHECKED, exams, kbRange, type Exam, type FormSpec } from '../../data/formSpecs';
+import { CHECKED, exams, guideTitle, kbRange, type Exam, type FormSpec } from '../../data/formSpecs';
 import { slugOf, tools } from '../../data/tools';
 
 type Card = { eyebrow: string; title: string; rows: [label: string, value: string][] };
@@ -23,7 +23,7 @@ export function getStaticPaths() {
   // Titled as the pages' headings, which say what people search for better than the tools' names.
   const toolCards: Record<string, Omit<Card, 'eyebrow'>> = {
     'photo-resizer': { title: 'Photo & signature resizer for exam forms', rows: rows('ibps-photo', 'upsc-photo', 'pan-photo', 'ssc-sign') },
-    'signature-resizer': { title: 'Signature resizer & cleaner', rows: rows('ssc-sign', 'ibps-sign', 'pan-sign', 'upsc-sign') },
+    'signature-resizer': { title: 'Signature cleaner & resizer', rows: rows('ssc-sign', 'ibps-sign', 'pan-sign', 'upsc-sign') },
     'passport-photo': {
       title: 'Passport size photo maker',
       rows: [...rows('passport-photo'), ['Print sheet', '6 × 4 inch, 300 DPI'], ['Background', 'Can be made white']],
@@ -75,7 +75,7 @@ export function getStaticPaths() {
       }),
     ),
     ...Object.fromEntries(
-      exams.map((e) => [`guide-${e.id}`, { eyebrow: 'Size guide', title: `${e.name} photo and signature size ${CHECKED.year}`, rows: [...e.specs.slice(0, 4).map((s) => specRow(e, s)), ...(guideExtra[e.id] ?? [])] }]),
+      exams.map((e) => [`guide-${e.id}`, { eyebrow: 'Size guide', title: guideTitle(e), rows: [...e.specs.slice(0, 4).map((s) => specRow(e, s)), ...(guideExtra[e.id] ?? [])] }]),
     ),
   };
 

@@ -2,6 +2,10 @@
 import '@fontsource-variable/inter';
 // Latin covers every page's text, so fetching it early keeps the swap from shifting layout late.
 import interLatin from '@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url';
+import { FONTS, fontFace } from '../i18n/fonts';
+import { graphemes } from '../i18n/format';
+import { pageLocale } from '../i18n';
+import { LOCALES, localePath } from '../i18n/locales';
 import { ogImage } from '../seo';
 
 type Props = {
@@ -13,21 +17,25 @@ type Props = {
 } & ({ og: string; noindex?: never } | { og?: never; noindex: true });
 
 const { title, description, schema = [], og } = Astro.props;
+const { locale, path } = pageLocale(Astro.url);
 const brand = ' - Manyx Labs';
-const fullTitle = title.length + brand.length <= 60 ? title + brand : title;
+const fullTitle = graphemes(title + brand) <= 60 ? title + brand : title;
 // "</script>" inside a string would end the tag early.
 const ld = (o: Record<string, unknown>) => JSON.stringify({ '@context': 'https://schema.org', ...o }).replace(/</g, '\\u003c');
 const canonical = new URL(Astro.url.pathname, Astro.site);
+const font = locale === 'en' ? undefined : FONTS[locale];
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang={locale}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
     <link rel="preload" href={interLatin} as="font" type="font/woff2" crossorigin />
+    {font && <link rel="preload" href={font.url} as="font" type="font/woff2" crossorigin />}
+    {font && <style is:inline set:html={`${fontFace(font)}:root{--script:'${font.family}'}`} />}
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -37,9 +45,13 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
       og ? (
         <>
           <link rel="canonical" href={canonical} />
+          {LOCALES.map((l) => (
+            <link rel="alternate" hreflang={l} href={new URL(localePath(l, path), Astro.site)} />
+          ))}
+          <link rel="alternate" hreflang="x-default" href={new URL(path, Astro.site)} />
           <meta property="og:type" content="website" />
           <meta property="og:site_name" content="Manyx Labs" />
-          <meta property="og:locale" content="en_IN" />
+          <meta property="og:locale" content={`${locale}_IN`} />
           <meta property="og:title" content={title} />
           <meta property="og:description" content={description} />
           <meta property="og:url" content={canonical} />
@@ -113,7 +125,8 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     min-height: 100vh;
     background: var(--bg);
     color: var(--text);
-    font-family: 'Inter Variable', system-ui, sans-serif;
+    /* Inter for Latin text and digits, then the page's own script, if it has one. */
+    font-family: 'Inter Variable', var(--script, system-ui), system-ui, sans-serif;
     font-size: 1rem;
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
@@ -155,6 +168,13 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
   h3,
   p {
     margin: 0;
+  }
+
+  /* Indic matras reach above and below the Latin line, and letter-spacing pulls conjuncts apart.
+     :root lifts this over the pages' scoped heading styles. */
+  :root :is(h1, h2, h3, .eyebrow):not(:lang(en)) {
+    line-height: 1.4;
+    letter-spacing: normal;
   }
 
   a {

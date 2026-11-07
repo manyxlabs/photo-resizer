@@ -1,0 +1,35 @@
+---
+import FormsAt from '../../../../components/FormsAt.astro';
+import Resizer from '../../../../components/Resizer.astro';
+import SizeLinks from '../../../../components/SizeLinks.astro';
+import { PHOTO_KB } from '../../../../data/tools';
+import { pageLocale } from '../../../../i18n';
+import { fmt } from '../../../../i18n/format';
+import { LANG_PARAMS } from '../../../../i18n/locales';
+import Tool from '../../../../layouts/Tool.astro';
+
+export function getStaticPaths() {
+  return LANG_PARAMS.flatMap((lang) => PHOTO_KB.map((kb) => ({ params: { lang, size: `${kb}-kb` }, props: { kb } })));
+}
+
+const { kb } = Astro.props as { kb: number };
+const { t } = pageLocale(Astro.url);
+const page = t.photoResizer;
+---
+
+<Tool
+  tool="photo-resizer"
+  variant={{ path: `/tools/photo-resizer/${kb}-kb/`, name: fmt(t.sizes.photoUnder, { kb }) }}
+  title={fmt(page.under.title, { kb })}
+  description={fmt(page.under.description, { kb })}
+  heading={fmt(page.under.heading, { kb })}
+  lede={fmt(page.under.lede, { kb })}
+  applicationCategory="MultimediaApplication"
+  faq={page.faq}
+>
+  <FormsAt kb={kb} />
+
+  <Resizer maxKB={kb} />
+
+  <SizeLinks />
+</Tool>

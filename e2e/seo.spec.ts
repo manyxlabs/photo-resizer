@@ -6,10 +6,12 @@ mkdirSync(ARTIFACTS, { recursive: true });
 
 const SITE = 'https://www.manyxlabs.com';
 // The website serves every other path; links there are its own suite's to check.
-const OURS = /^\/(tools|photo-size)(\/|$)/;
+const OURS = /^\/((hi|bn|mr|te|ta|gu|kn|ml)\/)?(tools|photo-size)(\/|$)/;
 
 const meta = (html: string, attr: string, key: string) =>
   new RegExp(`<meta ${attr}="${key}" content="([^"]*)"`).exec(html)?.[1];
+// A search result's limit is closer to characters as read than to code units; a Devanagari conjunct is one.
+const graphemes = (s: string) => [...new Intl.Segmenter().segment(s)].length;
 const text = (s: string) =>
   s
     .replace(/<[^>]+>/g, '')
@@ -48,9 +50,11 @@ test('every page is in the sitemap, reachable, and described for search and shar
   for (const [path, html] of seen) {
     const title = text(/<title>(.*?)<\/title>/.exec(html)![1]!);
     const description = meta(html, 'name', 'description')!;
-    expect(title.length, `${path} title`).toBeLessThanOrEqual(60);
-    expect(description.length, `${path} description`).toBeGreaterThanOrEqual(100);
-    expect(description.length, `${path} description`).toBeLessThanOrEqual(160);
+    // English keeps its stricter code-unit count; it can only differ for the other scripts.
+    const length = OURS.exec(path)![2] ? graphemes : (s: string) => s.length;
+    expect(length(title), `${path} title`).toBeLessThanOrEqual(60);
+    expect(length(description), `${path} description`).toBeGreaterThanOrEqual(100);
+    expect(length(description), `${path} description`).toBeLessThanOrEqual(160);
     expect(titles.has(title), `${path} repeats the title "${title}"`).toBe(false);
     expect(descriptions.has(description), `${path} repeats its description`).toBe(false);
     titles.add(title);

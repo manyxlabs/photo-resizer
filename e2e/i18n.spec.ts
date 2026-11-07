@@ -112,7 +112,7 @@ for (const l of OTHERS) {
       const family = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--script'));
       const script = /Noto Sans (\w+)/.exec(family)![1]!.toLowerCase();
       expect(fonts.length).toBeGreaterThan(0);
-      for (const f of fonts) expect(f, 'an unexpected font').toMatch(new RegExp(`/(inter-[\\w-]+|noto-sans-${script}-${script}-wght-normal)\\.[\\w-]+\\.woff2$`));
+      for (const f of fonts) expect(f, 'an unexpected font').toMatch(new RegExp(`/(geist-[\\w-]+|noto-sans-${script}-${script}-wght-normal)\\.[\\w-]+\\.woff2$`));
       expect(fonts.some((f) => f.includes(`noto-sans-${script}`))).toBe(true);
     });
 

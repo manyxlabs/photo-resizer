@@ -109,6 +109,11 @@ const myAadhaar = { text: t.myAadhaar, href: 'https://myaadhaar.uidai.gov.in/gen
     el.hidden = !text;
   }
 
+  // A note in the page's language needs its script's face, which a phone's system font may lack.
+  const noteFont = [getComputedStyle(document.documentElement).getPropertyValue('--script').trim(), 'system-ui', 'sans-serif']
+    .filter(Boolean)
+    .join(', ');
+
   function paint(ctx: Ctx, i: number, draft?: Box) {
     const { source } = file!.pages[i]!;
     const { width: w, height: h } = source;
@@ -121,10 +126,10 @@ const myAadhaar = { text: t.myAadhaar, href: 'https://myaadhaar.uidai.gov.in/gen
       ctx.translate(w / 2, h / 2);
       ctx.rotate(-Math.atan2(h, w));
       const diagonal = Math.hypot(w, h);
-      ctx.font = `600 100px system-ui, sans-serif`;
+      ctx.font = `600 100px ${noteFont}`;
       // Long notes shrink to fit the diagonal; short ones stop at a size that still reads as a note.
       const size = Math.min(diagonal / 14, (100 * diagonal * 0.8) / ctx.measureText(text).width);
-      ctx.font = `600 ${size}px system-ui, sans-serif`;
+      ctx.font = `600 ${size}px ${noteFont}`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = 'rgb(185 28 28 / 0.45)';

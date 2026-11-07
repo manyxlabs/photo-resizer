@@ -75,6 +75,8 @@ const { locale, path, t, href } = pageLocale(Astro.url);
 
   // A <details> menu opens and closes from the keyboard by itself; this closes it the way menus do.
   const menu = document.querySelector<HTMLDetailsElement>('.lang')!;
+  // A tool opened on a preset (?preset=) stays on it in the other language.
+  for (const a of menu.querySelectorAll('a')) a.search = location.search;
   document.addEventListener('click', (e) => {
     if (!menu.contains(e.target as Node)) menu.open = false;
   });

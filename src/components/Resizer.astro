@@ -117,8 +117,8 @@ const script = { js: t.js, sizes: all.sizes, presets, report: reportHref(catalog
     <div class="result">
       <p id="result" aria-live="polite"></p>
       <div class="actions">
-        <button id="sheet" class="btn" type="button" hidden>{t.sheet}</button>
-        <a id="download" class="btn primary" download hidden>{t.download}</a>
+        <button id="sheet" class="btn btn-glass" type="button" hidden>{t.sheet}</button>
+        <a id="download" class="btn btn-primary" download hidden>{t.download}</a>
       </div>
     </div>
   </section>
@@ -550,7 +550,7 @@ const script = { js: t.js, sizes: all.sizes, presets, report: reportHref(catalog
     /* Wide signatures are capped by width, tall photos by height, so the box always matches the image. */
     width: min(100%, 360px, 420px * var(--ratio, 1));
     aspect-ratio: var(--ratio, 1);
-    box-shadow: 0 0 0 1px var(--border);
+    box-shadow: 0 0 0 1px rgb(var(--fg) / 0.1);
     cursor: grab;
     touch-action: none;
   }

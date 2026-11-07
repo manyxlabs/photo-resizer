@@ -66,7 +66,7 @@ const og = tool;
 >
   <Header />
 
-  <main class="wrap tool-page">
+  <main class="wrap page">
     <h1>{heading}</h1>
     <p class="lede">{`${lede} ${t.onDevice}`}</p>
     <slot />
@@ -105,63 +105,60 @@ const og = tool;
 </Base>
 
 <style>
-  main {
-    max-width: 760px;
-    padding-block: 32px 64px;
-  }
-
-  h1 {
-    font-size: clamp(1.75rem, 5vw, 2.5rem);
-    font-weight: 700;
-    line-height: 1.15;
-    letter-spacing: -0.03em;
-  }
-
-  .lede {
-    margin-top: 8px;
-    color: var(--muted);
-  }
-
   .more,
   .faq {
-    margin-top: 40px;
+    margin-top: 56px;
   }
 
-  .faq {
-    display: grid;
-    gap: 8px;
+  :is(.more, .faq) h2 {
+    font-size: 1.25rem;
+  }
+
+  .faq h2 {
+    margin-bottom: 8px;
   }
 
   details {
-    border-bottom: 1px solid var(--border);
-    padding-block: 10px;
+    border-bottom: 1px solid rgb(var(--fg) / 0.1);
+    padding-block: 14px;
   }
 
   summary {
-    font-weight: 550;
+    font-weight: 500;
     cursor: pointer;
   }
 
   details p {
-    margin-top: 6px;
-    color: var(--muted);
-  }
-
-  :is(.more, .faq) h2 {
-    font-size: 1.0625rem;
-    font-weight: 620;
+    margin-top: 8px;
+    color: rgb(var(--muted));
+    line-height: 1.625;
   }
 
   .more ul {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px 20px;
-    margin: 10px 0 0;
+    gap: 8px;
+    margin: 16px 0 0;
     padding: 0;
     list-style: none;
   }
 
   .more a {
-    color: var(--accent);
+    display: block;
+    padding: 6px 14px;
+    border: 1px solid rgb(var(--fg) / 0.1);
+    border-radius: 999px;
+    background: rgb(var(--fg) / 0.05);
+    color: rgb(var(--fg) / 0.8);
+    font-size: 0.875rem;
+    text-decoration: none;
+    transition:
+      color 0.2s,
+      background-color 0.2s;
+  }
+
+  .more a:hover {
+    background: rgb(var(--fg) / 0.1);
+    color: rgb(var(--fg));
   }
 </style>

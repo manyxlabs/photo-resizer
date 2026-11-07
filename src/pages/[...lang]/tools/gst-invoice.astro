@@ -100,7 +100,7 @@ const links = {
     <section class="panel glass">
       <h2><span>4</span> {t.items}</h2>
       <div id="items" class="items"></div>
-      <button id="add" class="btn" type="button">{t.addItem}</button>
+      <button id="add" class="btn btn-glass" type="button">{t.addItem}</button>
     </section>
 
     <section class="panel glass">
@@ -116,7 +116,7 @@ const links = {
       <h2><span>6</span> {t.print}</h2>
       <div class="result">
         <p id="summary" aria-live="polite"></p>
-        <button id="print" class="btn primary" type="button">{t.print}</button>
+        <button id="print" class="btn btn-primary" type="button">{t.print}</button>
       </div>
       <ul id="problems" class="error" role="alert" hidden></ul>
       <p class="hint">{t.printHint}</p>
@@ -542,7 +542,7 @@ const links = {
     min-width: 0;
     margin: 0;
     padding: 12px 14px 14px;
-    border: 1px solid var(--border);
+    border: 1px solid rgb(var(--fg) / 0.1);
     border-radius: 12px;
   }
 
@@ -562,9 +562,9 @@ const links = {
 
   .item legend {
     padding-inline: 4px;
-    color: var(--muted);
+    color: rgb(var(--muted));
     font-size: 0.8125rem;
-    font-weight: 550;
+    font-weight: 500;
   }
 
   .item .wide {
@@ -578,7 +578,7 @@ const links = {
     padding: 0;
     border: 0;
     background: none;
-    color: var(--accent);
+    color: rgb(var(--accent-text));
     font: inherit;
     font-size: 0.875rem;
     cursor: pointer;
@@ -776,7 +776,6 @@ const links = {
       margin: 12mm;
     }
 
-    :global(body)::before,
     :global(body > :not(main)),
     :global(main > :not(.sheets)) {
       display: none !important;

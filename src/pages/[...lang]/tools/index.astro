@@ -1,0 +1,117 @@
+---
+import Footer from '../../../components/Footer.astro';
+import Header from '../../../components/Header.astro';
+import SizeLinks from '../../../components/SizeLinks.astro';
+import { toolPath, tools } from '../../../data/tools';
+import { pageLocale } from '../../../i18n';
+import { LANG_PARAMS } from '../../../i18n/locales';
+import Base from '../../../layouts/Base.astro';
+import { breadcrumbs } from '../../../seo';
+
+export const getStaticPaths = () => LANG_PARAMS.map((lang) => ({ params: { lang } }));
+
+const { t, href } = pageLocale(Astro.url);
+---
+
+<Base
+  title={t.hub.title}
+  description={t.hub.description}
+  og="tools"
+  schema={[
+    {
+      '@type': 'ItemList',
+      name: t.hub.heading,
+      itemListElement: tools.map((tool, i) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        name: t.tools[tool].name,
+        url: new URL(href(toolPath(tool)), Astro.site).href,
+      })),
+    },
+    breadcrumbs([
+      [t.crumbs.home, href('/')],
+      [t.crumbs.tools, href('/tools/')],
+    ]),
+  ]}
+>
+  <Header />
+
+  <main class="wrap">
+    <h1>{t.hub.heading}</h1>
+    <p class="lede">{t.hub.lede}</p>
+
+    <ul class="list">
+      {
+        tools.map((tool) => (
+          <li>
+            <a class="glass" href={href(toolPath(tool))}>
+              <h2>{t.tools[tool].name}</h2>
+              <p>{t.tools[tool].blurb}</p>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+
+    <SizeLinks />
+  </main>
+
+  <Footer />
+</Base>
+
+<style>
+  main {
+    max-width: 760px;
+    padding-block: 32px 64px;
+  }
+
+  h1 {
+    font-size: clamp(1.75rem, 5vw, 2.5rem);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+  }
+
+  .lede {
+    margin-top: 8px;
+    color: var(--muted);
+  }
+
+  .list {
+    display: grid;
+    gap: 12px;
+    margin: 32px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  @media (min-width: 640px) {
+    .list {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .list a {
+    display: grid;
+    align-content: start;
+    gap: 4px;
+    height: 100%;
+    padding: 20px;
+    border-radius: 20px;
+    text-decoration: none;
+  }
+
+  .list a:hover {
+    border-color: var(--muted);
+  }
+
+  h2 {
+    font-size: 1.0625rem;
+    font-weight: 620;
+  }
+
+  .list p {
+    color: var(--muted);
+    font-size: 0.9375rem;
+  }
+</style>

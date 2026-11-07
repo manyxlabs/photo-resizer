@@ -1,0 +1,129 @@
+---
+import Copy from '../../../components/Copy.astro';
+import Footer from '../../../components/Footer.astro';
+import Header from '../../../components/Header.astro';
+import { CHECKED, checkedOn, exams, kbRange } from '../../../data/formSpecs';
+import { listOf, pageLocale } from '../../../i18n';
+import { fmt } from '../../../i18n/format';
+import { LANG_PARAMS } from '../../../i18n/locales';
+import Base from '../../../layouts/Base.astro';
+import { breadcrumbs } from '../../../seo';
+
+export const getStaticPaths = () => LANG_PARAMS.map((lang) => ({ params: { lang } }));
+
+const { locale, t, href } = pageLocale(Astro.url);
+// PAN appears once, for both of its routes: each name keeps its qualifier in brackets.
+const named = new Set(exams.map((e) => t.exams[e.id].name.split(' (')[0]!));
+---
+
+<Base
+  title={fmt(t.guides.title, { year: CHECKED.year })}
+  description={fmt(t.guides.description, { exams: listOf(locale, named) })}
+  og="photo-size"
+  schema={[
+    {
+      '@type': 'ItemList',
+      name: t.guides.listName,
+      itemListElement: exams.map((e, i) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        name: t.exams[e.id].name,
+        url: new URL(href(`/photo-size/${e.id}/`), Astro.site).href,
+      })),
+    },
+    breadcrumbs([
+      [t.crumbs.home, href('/')],
+      [t.crumbs.guides, href('/photo-size/')],
+    ]),
+  ]}
+>
+  <Header />
+
+  <main class="wrap">
+    <h1>{t.guides.heading}</h1>
+    <p class="lede">
+      <Copy text={t.guides.lede} parts={{ resizer: { text: t.guides.resizer, href: href('/tools/photo-resizer/') } }} vars={{ checked: checkedOn(locale) }} />
+    </p>
+
+    <ul class="list">
+      {
+        exams.map((exam) => (
+          <li>
+            <a class="glass" href={href(`/photo-size/${exam.id}/`)}>
+              <h2>{t.exams[exam.id].name}</h2>
+              <p>{t.exams[exam.id].covers}</p>
+              <ul class="specs">
+                {exam.specs.map((s) => (
+                  <li>{fmt(t.guides.spec, { spec: t.specs[s.id].label, width: s.width, height: s.height, range: kbRange(t.sizes, s) })}</li>
+                ))}
+              </ul>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </main>
+
+  <Footer />
+</Base>
+
+<style>
+  main {
+    max-width: 760px;
+    padding-block: 32px 64px;
+  }
+
+  h1 {
+    font-size: clamp(1.75rem, 5vw, 2.5rem);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+  }
+
+  .lede {
+    margin-top: 8px;
+    color: var(--muted);
+  }
+
+  .lede a {
+    color: var(--accent);
+  }
+
+  .list {
+    display: grid;
+    gap: 12px;
+    margin: 32px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .list a {
+    display: grid;
+    gap: 4px;
+    padding: 20px;
+    border-radius: 20px;
+    text-decoration: none;
+  }
+
+  .list a:hover {
+    border-color: var(--muted);
+  }
+
+  h2 {
+    font-size: 1.0625rem;
+    font-weight: 620;
+  }
+
+  .list p,
+  .specs {
+    color: var(--muted);
+    font-size: 0.9375rem;
+  }
+
+  .specs {
+    margin: 4px 0 0;
+    padding: 0;
+    list-style: none;
+    font-variant-numeric: tabular-nums;
+  }
+</style>

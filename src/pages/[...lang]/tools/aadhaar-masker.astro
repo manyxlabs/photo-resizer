@@ -1,118 +1,76 @@
 ---
-import Explainer from '../../components/Explainer.astro';
-import Tool from '../../layouts/Tool.astro';
+import Copy from '../../../components/Copy.astro';
+import Explainer from '../../../components/Explainer.astro';
+import { pageLocale } from '../../../i18n';
+import { LANG_PARAMS } from '../../../i18n/locales';
+import Tool from '../../../layouts/Tool.astro';
+
+export const getStaticPaths = () => LANG_PARAMS.map((lang) => ({ params: { lang } }));
+
+const { t: all } = pageLocale(Astro.url);
+const t = all.aadhaar;
+const myAadhaar = { text: t.myAadhaar, href: 'https://myaadhaar.uidai.gov.in/genricDownloadAadhaar' };
 ---
 
-<Tool
-  path="/tools/aadhaar-masker/"
-  title="Mask Aadhaar online: hide the first 8 digits"
-  description="Hide the first 8 digits of your Aadhaar number, or anything else on an ID, before you share a copy. Works on photos, scans and e-Aadhaar PDFs. Free."
-  heading="Mask your Aadhaar number"
-  faq={[
-    [
-      'What is a masked Aadhaar?',
-      'A copy of your Aadhaar where the first 8 digits of the number are replaced, for example with X, and only the last 4 digits can be read. UIDAI offers it as an option when you download your e-Aadhaar.',
-    ],
-    [
-      'Is a masked Aadhaar valid for KYC?',
-      'UIDAI issues masked e-Aadhaar itself, but whether a masked copy is enough is up to the organisation asking. Some services need your full number to verify it. If you are not sure, ask them before you send a copy.',
-    ],
-    [
-      'Is my Aadhaar uploaded anywhere?',
-      'No. The file is opened, read and masked in your browser, and never leaves your device. The text recognition that finds the number also runs on your device.',
-    ],
-    [
-      'Can I mask a PAN card or other ID too?',
-      'Yes. Drag over anything you want hidden on a PAN card, passport, voter ID, driving licence or bank statement. Only Aadhaar numbers are found automatically.',
-    ],
-    [
-      'Why does my PDF come back as images?',
-      'A black box drawn on top of a PDF leaves the text underneath, where anyone can copy it out. Turning each page into an image with the box burned in removes the hidden text for good.',
-    ],
-  ]}
->
-  <Fragment slot="lede">
-    Hide the first 8 digits of your Aadhaar number, or anything else, before you share a copy. It all happens on
-    your device; nothing is uploaded.
-  </Fragment>
-
-  <form id="tool" class="tool" novalidate>
+<Tool tool="aadhaar-masker" title={t.title} description={t.description} heading={t.heading} lede={t.lede} faq={t.faq}>
+  <form id="tool" class="tool" novalidate data-t={JSON.stringify(t.js)}>
     <section class="panel glass">
-      <h2><span>1</span> Pick your Aadhaar or other ID</h2>
+      <h2><span>1</span> {t.pick}</h2>
       <label class="drop" id="drop">
         <input id="file" type="file" accept="image/*,.heic,.heif,.tif,.tiff,application/pdf,.pdf" />
-        <strong>Choose a photo, scan or PDF</strong>
-        <span>or drop it here. JPG, PNG, WebP, HEIC (iPhone), AVIF, TIFF, GIF, BMP or PDF.</span>
+        <strong>{t.choose}</strong>
+        <span>{t.drop}</span>
       </label>
       <p id="file-status" class="hint" aria-live="polite" hidden></p>
       <p id="file-error" class="error" role="alert" hidden></p>
     </section>
 
     <section class="panel glass" id="edit" hidden>
-      <h2><span>2</span> Check what's hidden</h2>
+      <h2><span>2</span> {t.check}</h2>
       <p id="detect" aria-live="polite"></p>
       <div class="stage" id="pages"></div>
       <div class="result">
-        <p class="hint">Drag over anything else to hide it. Tap a box to remove it.</p>
+        <p class="hint">{t.dragHint}</p>
         <div class="actions">
-          <button id="undo" class="btn" type="button" disabled>Undo</button>
-          <button id="clear" class="btn" type="button" disabled>Clear</button>
+          <button id="undo" class="btn" type="button" disabled>{t.undo}</button>
+          <button id="clear" class="btn" type="button" disabled>{t.clear}</button>
         </div>
       </div>
-      <p class="hint">
-        Older Aadhaar letters and cards have a QR code that holds the full number. If yours predates UIDAI's Secure
-        QR code, or you aren't sure, drag a box over the QR code too.
-      </p>
+      <p class="hint">{t.qr}</p>
     </section>
 
     <section class="panel glass" id="finish" hidden>
-      <h2><span>3</span> Add a note and download</h2>
+      <h2><span>3</span> {t.finish}</h2>
       <label class="field">
-        Add a note across the copy (optional)
-        <input id="note" type="text" maxlength="80" placeholder="For KYC with ABC Bank only, 2 Nov 2026" />
+        {t.note}
+        <input id="note" type="text" maxlength="80" placeholder={t.notePlaceholder} />
       </label>
-      <p class="hint">
-        Write who the copy is for and today's date, so it can't easily be reused for anything else.
-      </p>
-      <p id="pdf-hint" class="hint" hidden>
-        Each page comes back as a picture. A box drawn over a PDF in an editor leaves the text underneath it, where
-        anyone can copy it out; turning the page into a picture removes it.
-      </p>
+      <p class="hint">{t.noteHint}</p>
+      <p id="pdf-hint" class="hint" hidden>{t.pdfHint}</p>
       <div class="result">
         <p id="result" aria-live="polite"></p>
-        <a id="download" class="btn primary" download hidden>Download</a>
+        <a id="download" class="btn primary" download hidden>{t.download}</a>
       </div>
     </section>
   </form>
 
-  <Explainer title="What is masked Aadhaar?">
-    <li>
-      UIDAI, which issues Aadhaar, defines masked Aadhaar as a copy where the first 8 digits of the number are replaced
-      and only the last 4 stay visible. A hotel, a landlord or a bank can still tell which Aadhaar it is, but whoever
-      gets hold of the copy doesn't have your full number. If you have an e-Aadhaar, you can also <a
-        href="https://myaadhaar.uidai.gov.in/genricDownloadAadhaar">download a masked one from myAadhaar</a
-      >.
-    </li>
-    <li>
-      Nothing is uploaded. Your file is opened, read and masked in your browser, and the text recognition that finds
-      the number runs on your device too.
-    </li>
-    <li>
-      A PDF comes back as pictures of its pages. Drawing a black box over a PDF in most editors only adds a shape on
-      top: the number is still in the file as text, and copying it gets it back. Here every page becomes a picture
-      with the box burned in, put back together at its original size, so there is no text left to copy.
-    </li>
-    <li>
-      It works on any ID: PAN, passport, voter ID, driving licence or a bank statement. Automatic detection only looks
-      for Aadhaar numbers, so on anything else, drag over what you want hidden.
-    </li>
+  <Explainer title={t.what}>
+    {
+      t.how.map((item) => (
+        <li>
+          <Copy text={item} parts={{ link: myAadhaar }} />
+        </li>
+      ))
+    }
   </Explainer>
 </Tool>
 
 <script>
-  import { findAadhaar, type Box } from '../../lib/aadhaar';
-  import { openImage } from '../../lib/decode';
-  import { isPdf, openPdf, PdfPasswordError, renderPage } from '../../lib/pdf';
+  import type { Messages } from '../../../i18n/en';
+  import { fmt, plural } from '../../../i18n/format';
+  import { findAadhaar, type Box } from '../../../lib/aadhaar';
+  import { openImage } from '../../../lib/decode';
+  import { isPdf, openPdf, PdfPasswordError, renderPage } from '../../../lib/pdf';
 
   /** One page of the file; width and height are in PDF points, so the output keeps the original page size. */
   type Page = { source: HTMLCanvasElement; view: HTMLCanvasElement; width: number; height: number };
@@ -137,6 +95,8 @@ import Tool from '../../layouts/Tool.astro';
   const pdfHint = $<HTMLParagraphElement>('pdf-hint');
   const result = $<HTMLParagraphElement>('result');
   const download = $<HTMLAnchorElement>('download');
+  const t: Messages['aadhaar']['js'] = JSON.parse($('tool').dataset.t!);
+  const lang = document.documentElement.lang;
 
   let file: { stem: string; pdf: boolean; pages: Page[] } | null = null;
   let masks: Mask[] = [];
@@ -186,7 +146,7 @@ import Tool from '../../layouts/Tool.astro';
     download.hidden = true;
     if (!file) return;
     const { pages, pdf, stem } = file;
-    result.textContent = 'Making your copy…';
+    result.textContent = t.making;
     // Painted afresh, so a box being dragged on the preview never ends up in the file.
     const jpegs: Blob[] = [];
     for (let i = 0; i < pages.length; i++) {
@@ -211,10 +171,10 @@ import Tool from '../../layouts/Tool.astro';
     url = URL.createObjectURL(out);
     download.href = url;
     download.download = `${stem}-masked.${pdf ? 'pdf' : 'jpg'}`;
-    download.textContent = `Download ${pdf ? 'PDF' : 'JPG'}`;
+    download.textContent = fmt(t.downloadAs, { type: pdf ? 'PDF' : 'JPG' });
     download.hidden = false;
-    const hidden = masks.length === 1 ? '1 area hidden' : `${masks.length} areas hidden`;
-    const size = pdf ? `${pages.length} ${pages.length === 1 ? 'page' : 'pages'}` : `${pages[0]!.source.width} × ${pages[0]!.source.height} px`;
+    const hidden = plural(lang, masks.length, t.hidden);
+    const size = pdf ? plural(lang, pages.length, t.pages) : `${pages[0]!.source.width} × ${pages[0]!.source.height} px`;
     result.textContent = `${size} · ${hidden} · ${kb(out.size)} · ${pdf ? 'PDF' : 'JPG'}`;
   }
 
@@ -240,19 +200,19 @@ import Tool from '../../layouts/Tool.astro';
     try {
       for (let i = 0; i < pages.length; i++) {
         detect.textContent =
-          pages.length > 1 ? `Looking for the Aadhaar number on page ${i + 1} of ${pages.length}…` : 'Looking for the Aadhaar number…';
+          pages.length > 1 ? fmt(t.lookingPage, { n: i + 1, total: pages.length }) : t.looking;
         found.push(...(await findAadhaar(pages[i]!.source)).map((b) => ({ ...b, page: i })));
         if (mine !== opening) return;
       }
     } catch {
-      if (mine === opening) detect.textContent = "Automatic detection didn't load. Drag over the number to hide it yourself.";
+      if (mine === opening) detect.textContent = t.noDetection;
       return;
     }
     if (!found.length) {
-      detect.textContent = "Couldn't find an Aadhaar number. Drag over it to hide it yourself.";
+      detect.textContent = t.notFound;
       return;
     }
-    detect.textContent = `Found the Aadhaar number in ${found.length === 1 ? 'one place' : `${found.length} places`} and hid its first 8 digits. Check the preview below.`;
+    detect.textContent = plural(lang, found.length, t.found);
     commit([...masks, ...found]);
   }
 
@@ -274,10 +234,10 @@ import Tool from '../../layouts/Tool.astro';
     const doc = await openPdf(picked);
     try {
       if (doc.numPages > MAX_PAGES)
-        return `"${picked.name}" has ${doc.numPages} pages; this tool takes up to ${MAX_PAGES}. Save just the pages with your ID as a new PDF, then pick that.`;
+        return fmt(t.tooManyPages, { name: picked.name, pages: doc.numPages, max: MAX_PAGES });
       const pages = [];
       for (let n = 1; n <= doc.numPages; n++) {
-        show(fileStatus, `Opening page ${n} of ${doc.numPages}…`);
+        show(fileStatus, fmt(t.openingPage, { n, total: doc.numPages }));
         const { canvas, width, height } = await renderPage(doc, n, DPI);
         if (mine !== opening) return null;
         pages.push({ source: canvas, width, height });
@@ -293,7 +253,7 @@ import Tool from '../../layouts/Tool.astro';
     if (!picked) return;
     const mine = ++opening;
     show(fileError, '');
-    show(fileStatus, `Opening "${picked.name}"…`);
+    show(fileStatus, fmt(t.opening, { name: picked.name }));
     let pdf = false;
     let pages: Awaited<ReturnType<typeof readPages>>;
     try {
@@ -302,8 +262,8 @@ import Tool from '../../layouts/Tool.astro';
     } catch (err) {
       pages =
         err instanceof PdfPasswordError
-          ? `"${picked.name}" is locked with a password, as e-Aadhaar PDFs are. Open it in your PDF viewer, then print or save it as a PDF without the password, or take a screenshot, and pick that here.`
-          : `Couldn't open "${picked.name}". Pick a photo, scan or PDF of your ID: JPG, PNG, WebP, HEIC, AVIF, TIFF, GIF, BMP or PDF.`;
+          ? fmt(t.locked, { name: picked.name })
+          : fmt(t.cantOpen, { name: picked.name });
     }
     // A slow PDF or HEIC must not land on top of a file picked after it.
     if (!pages || mine !== opening) return;
@@ -319,7 +279,7 @@ import Tool from '../../layouts/Tool.astro';
         view.height = p.source.height;
         view.style.setProperty('--ratio', String(view.width / view.height));
         view.tabIndex = 0;
-        view.setAttribute('aria-label', `Page ${i + 1}. Drag to hide an area; tap a box to remove it.`);
+        view.setAttribute('aria-label', fmt(t.page, { n: i + 1 }));
         listen(view, i);
         stage.append(view);
         return { ...p, view };

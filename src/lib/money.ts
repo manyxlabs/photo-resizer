@@ -98,11 +98,11 @@ export function gstinCheckChar(first14: string): string {
 }
 
 /** Why a GSTIN is not valid, or '' when it is. Expects it trimmed and upper-cased. */
-export function gstinError(gstin: string): string {
-  if (!/^\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(gstin))
-    return 'A GSTIN is 15 characters: a 2-digit state code, a 10-character PAN, an entity number, Z and a check character.';
-  if (!STATES[gstin.slice(0, 2)]) return `${gstin.slice(0, 2)} is not a GST state code.`;
-  if (gstinCheckChar(gstin) !== gstin[14]) return 'The last character does not match. Check the GSTIN for a typo.';
+/** What is wrong with a GSTIN, if anything; the page words it in its language. */
+export function gstinError(gstin: string): 'format' | 'state' | 'check' | '' {
+  if (!/^\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(gstin)) return 'format';
+  if (!STATES[gstin.slice(0, 2)]) return 'state';
+  if (gstinCheckChar(gstin) !== gstin[14]) return 'check';
   return '';
 }
 

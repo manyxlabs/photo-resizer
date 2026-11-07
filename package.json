@@ -19,6 +19,13 @@
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",
     "@fontsource-variable/inter": "^5.3.0",
+    "@fontsource-variable/noto-sans-bengali": "^5.3.0",
+    "@fontsource-variable/noto-sans-devanagari": "^5.3.0",
+    "@fontsource-variable/noto-sans-gujarati": "^5.3.0",
+    "@fontsource-variable/noto-sans-kannada": "^5.3.0",
+    "@fontsource-variable/noto-sans-malayalam": "^5.3.0",
+    "@fontsource-variable/noto-sans-tamil": "^5.3.0",
+    "@fontsource-variable/noto-sans-telugu": "^5.3.0",
     "@mediapipe/tasks-vision": "^1.1.1",
     "astro": "^7.4.2",
     "heic-to": "^1.6.6",

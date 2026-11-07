@@ -3,16 +3,21 @@
 // public/_resizer/og/. Built only in dev: the PNGs are what is published.
 import '@fontsource-variable/inter';
 import { CHECKED, exams, guideTitle, kbRange, type Exam, type FormSpec } from '../../data/formSpecs';
-import { slugOf, tools } from '../../data/tools';
+import { tools } from '../../data/tools';
+import { catalogues } from '../../i18n';
 
 type Card = { eyebrow: string; title: string; rows: [label: string, value: string][] };
 
 // Astro hoists getStaticPaths out of the page, so everything it uses lives inside it.
 export function getStaticPaths() {
   if (!import.meta.env.DEV) return [];
+  // Every language shares these English cards.
+  const en = catalogues.en;
   const specs = exams.flatMap((exam) => exam.specs.map((spec) => ({ exam, spec })));
-  const short = (s: FormSpec) => s.label.replace(/ \(.*\)$/, '');
-  const specRow = (exam: Exam, s: FormSpec): [string, string] => [`${exam.name} ${short(s).toLowerCase()}`, `${s.width} × ${s.height} px, ${kbRange(s)}`];
+  const specRow = (exam: Exam, s: FormSpec): [string, string] => [
+    `${en.exams[exam.id].name} ${en.specs[s.id].noun}`,
+    `${s.width} × ${s.height} px, ${kbRange(en.sizes, s)}`,
+  ];
   const rows = (...ids: string[]) =>
     ids.map((id) => {
       const found = specs.find((s) => s.spec.id === id);
@@ -68,14 +73,13 @@ export function getStaticPaths() {
       rows: rows('ibps-photo', 'upsc-photo', 'passport-photo', 'pan-photo'),
     },
     ...Object.fromEntries(
-      tools.map((t) => {
-        const slug = slugOf(t);
+      tools.map((slug) => {
         if (!toolCards[slug]) throw new Error(`No share card for ${slug}`);
         return [slug, { eyebrow: 'Free tool', ...toolCards[slug] }];
       }),
     ),
     ...Object.fromEntries(
-      exams.map((e) => [`guide-${e.id}`, { eyebrow: 'Size guide', title: guideTitle(e), rows: [...e.specs.slice(0, 4).map((s) => specRow(e, s)), ...(guideExtra[e.id] ?? [])] }]),
+      exams.map((e) => [`guide-${e.id}`, { eyebrow: 'Size guide', title: guideTitle(en, e), rows: [...e.specs.slice(0, 4).map((s) => specRow(e, s)), ...(guideExtra[e.id] ?? [])] }]),
     ),
   };
 

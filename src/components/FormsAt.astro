@@ -1,5 +1,7 @@
 ---
-import { kbRange, specsCapped } from '../data/formSpecs';
+import { kbRange, specsCapped, type Exam, type FormSpec } from '../data/formSpecs';
+import { pageLocale } from '../i18n';
+import { fmt } from '../i18n/format';
 
 interface Props {
   kb: number;
@@ -9,19 +11,22 @@ interface Props {
 
 const { kb, scan } = Astro.props;
 const capped = specsCapped(kb, scan);
+const { t, href } = pageLocale(Astro.url);
+const item = (exam: Exam['id'], spec: FormSpec) =>
+  fmt(t.formsAt.item, { exam: t.exams[exam].name, spec: t.specs[spec.id].noun, width: spec.width, height: spec.height, range: kbRange(t.sizes, spec) });
 ---
 
 {
   capped.length > 0 && (
     <p class="forms">
-      {`Forms that cap ${scan ? 'the signature' : 'a file'} at ${kb} KB: `}
+      {`${fmt(scan ? t.formsAt.signatures : t.formsAt.files, { kb })} `}
       {capped.map(({ exam, spec }, i) => (
         <>
           {i > 0 && ' · '}
-          <a href={`/photo-size/${exam.id}/#${spec.id}`}>{`${exam.name} ${spec.label.toLowerCase()} (${spec.width} × ${spec.height} px, ${kbRange(spec)})`}</a>
+          <a href={href(`/photo-size/${exam.id}/#${spec.id}`)}>{item(exam.id, spec)}</a>
         </>
       ))}
-      . Pick yours from the list below to get its exact size.
+      {t.formsAt.pick}
     </p>
   )
 }

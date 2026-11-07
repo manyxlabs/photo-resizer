@@ -1,17 +1,23 @@
 ---
-import Footer from '../components/Footer.astro';
-import Header from '../components/Header.astro';
-import Base from '../layouts/Base.astro';
+import Footer from '../../components/Footer.astro';
+import Header from '../../components/Header.astro';
+import { pageLocale } from '../../i18n';
+import { LANG_PARAMS } from '../../i18n/locales';
+import Base from '../../layouts/Base.astro';
+
+export const getStaticPaths = () => LANG_PARAMS.map((lang) => ({ params: { lang } }));
+
+const { t, href } = pageLocale(Astro.url);
 ---
 
-<Base title="Page not found" description="This page does not exist." noindex>
+<Base title={t.notFound.title} description={t.notFound.description} noindex>
   <Header />
   <main class="wrap">
     <p class="code">404</p>
-    <h1>This page doesn't exist.</h1>
+    <h1>{t.notFound.heading}</h1>
     <p>
-      <a href="/tools/">See all free tools &rarr;</a>
-      <a href="/photo-size/">Photo and signature size guides &rarr;</a>
+      <a href={href('/tools/')}>{t.notFound.tools} &rarr;</a>
+      <a href={href('/photo-size/')}>{t.notFound.guides} &rarr;</a>
     </p>
   </main>
   <Footer />

@@ -17,6 +17,27 @@ Each runs entirely in the browser: no file or detail is ever uploaded.
 The per-exam size guides at [/photo-size/](https://www.manyxlabs.com/photo-size/) come from the same data as the presets, `src/data/formSpecs.ts`, with each exam's official source.
 The "under N KB" pages for photos, signatures and PDFs come from the limits in `src/data/tools.ts`.
 
+## Languages
+
+Every page is published in English, Hindi, Bengali, Marathi, Telugu, Tamil, Gujarati, Kannada and Malayalam.
+English keeps its URLs (`/tools/...`, `/photo-size/...`); each other language mirrors them under its code, such as `/hi/tools/` or `/ml/photo-size/ibps/`.
+The pages live in `src/pages/[...lang]/`, whose `lang` param is empty for English, and `src/i18n/locales.ts` lists the languages.
+Each page names its language in `<html lang>`, links every language's version with `hreflang` (plus `x-default`, the English one), and the sitemap carries the same alternates.
+The header's language menu links the same page in every language, keeping a tool's `?preset=`.
+
+All copy lives in one catalogue per language in `src/i18n/`: `en.ts` is the source and its type, and every other file must match it key for key.
+The build also fails when a translation drops or renames a `{placeholder}` or changes a list's length.
+Client scripts get their strings as JSON on the tool's form, so no catalogue is bundled into them.
+Dates and lists use `Intl` with the page's locale and Western digits (`hi-IN-u-nu-latn`).
+Each language loads only its own script's Noto Sans font, self-hosted from `@fontsource-variable`.
+
+Some text stays in English on purpose.
+Rent receipts and GST invoices are documents for employers and the tax system, so they and their amounts in words are in English, and the form says so.
+GST state names follow the GST registry, the IBPS declaration must be written in English, and a "Spec wrong?" email goes to the maintainer in English.
+Every language shares the English share images.
+
+Adding a language takes its code in `src/i18n/locales.ts` (and in the website's copy, whose Worker must forward its paths), a catalogue, and a font in `src/i18n/fonts.ts`.
+
 Every page names a 1200 x 630 share image in `public/_resizer/og/`.
 They are screenshots of `src/pages/og/[slug].astro`, which exists only in dev; after changing a title, a tool or a spec, run `npm run og` and commit the images.
 The E2E suite fails on a page whose image is missing, a page left out of the sitemap or not linked, and a repeated title or description.
@@ -39,7 +60,8 @@ Where Playwright's own browser is unavailable, point it at a system one with `CH
 ## How it is served
 
 This is its own Cloudflare Worker, `photo-resizer`, with no route or domain of its own.
-The website Worker ([manyxlabs/website](https://github.com/manyxlabs/website)) forwards `/tools*`, `/photo-size*`, `/_resizer/*` and `/sitemap-resizer-*` to it through a service binding, so the tools live on www.manyxlabs.com.
+The website Worker ([manyxlabs/website](https://github.com/manyxlabs/website)) forwards `/tools*`, `/photo-size*`, the same paths under each language prefix (such as `/hi/tools*`), `/_resizer/*` and `/sitemap-resizer-*` to it through a service binding, so the tools live on www.manyxlabs.com.
+Each language's 404 page is built at `/<code>/404.html`, where Cloudflare's nearest-404 lookup finds it.
 Its bundles live under `/_resizer/` and its sitemap is `sitemap-resizer-index.xml`, so nothing collides with the website's own files.
 The header, footer and layout are copies of the website's; change both together.
 

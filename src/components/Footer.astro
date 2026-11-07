@@ -28,8 +28,8 @@ const { t, href } = pageLocale(Astro.url);
     gap: 12px 24px;
     justify-content: space-between;
     padding-block: 32px 40px;
-    border-top: 1px solid var(--border);
-    color: var(--muted);
+    border-top: 1px solid rgb(var(--fg) / 0.1);
+    color: rgb(var(--muted));
     font-size: 0.875rem;
   }
 
@@ -44,6 +44,6 @@ const { t, href } = pageLocale(Astro.url);
   }
 
   nav a:hover {
-    color: var(--text);
+    color: rgb(var(--fg));
   }
 </style>

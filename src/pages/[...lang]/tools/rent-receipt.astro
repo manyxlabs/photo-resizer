@@ -58,7 +58,7 @@ const links = {
       <h2><span>3</span> {t.print}</h2>
       <div class="result">
         <p id="summary" aria-live="polite"></p>
-        <button id="print" class="btn primary" type="button">{t.print}</button>
+        <button id="print" class="btn btn-primary" type="button">{t.print}</button>
       </div>
       <ul id="problems" class="error" role="alert" hidden></ul>
       <p class="hint">{t.printHint}</p>
@@ -317,7 +317,6 @@ const links = {
       margin: 10mm;
     }
 
-    :global(body)::before,
     :global(body > :not(main)),
     :global(main > :not(.sheets)) {
       display: none !important;

@@ -109,7 +109,7 @@ export default {
     },
     ssc: {
       name: 'SSC',
-      title: 'SSC फ़ोटो और सिग्नेचर साइज़ {year}',
+      title: 'SSC CGL फ़ोटो और सिग्नेचर साइज़ {year}',
       covers: 'CGL, CHSL, JE और Stenographer 2026',
       source: 'SSC CGL 2026 नोटिस, पैरा 9.6',
       notes: [

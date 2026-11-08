@@ -1,0 +1,46 @@
+---
+import Explainer from '../../../../components/Explainer.astro';
+import PdfCompressor from '../../../../components/PdfCompressor.astro';
+import { PDF_KB, sizeLabel, sizeSlug } from '../../../../data/tools';
+import { pageLocale } from '../../../../i18n';
+import { fmt } from '../../../../i18n/format';
+import { LANG_PARAMS } from '../../../../i18n/locales';
+import Tool from '../../../../layouts/Tool.astro';
+
+export const getStaticPaths = () => LANG_PARAMS.map((lang) => ({ params: { lang } }));
+
+const { t, href } = pageLocale(Astro.url);
+const page = t.pdf;
+---
+
+<Tool tool="pdf-compressor" title={page.title} description={page.description} heading={page.heading} lede={page.lede} faq={page.faq}>
+  <PdfCompressor />
+
+  <p class="sizes">
+    {page.sizes}{' '}
+    {
+      PDF_KB.map((kb, i) => (
+        <>
+          {i > 0 && ' · '}
+          <a href={href(`/tools/pdf-compressor/${sizeSlug(kb)}/`)}>{fmt(t.sizes.pdfUnder, { size: sizeLabel(kb) })}</a>
+        </>
+      ))
+    }
+  </p>
+
+  <Explainer title={t.tool.howItWorks}>
+    {page.how.map((item) => <li>{item}</li>)}
+  </Explainer>
+</Tool>
+
+<style>
+  .sizes {
+    margin-top: 24px;
+    color: rgb(var(--muted));
+    font-size: 0.9375rem;
+  }
+
+  .sizes a {
+    color: rgb(var(--accent-text));
+  }
+</style>

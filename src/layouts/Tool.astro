@@ -1,26 +1,32 @@
 ---
 import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
-import { slugOf, toolAt, tools } from '../data/tools';
+import { toolPath, tools, type ToolId } from '../data/tools';
+import { pageLocale } from '../i18n';
 import { breadcrumbs, ogImage, organization } from '../seo';
 import Base from './Base.astro';
 
 interface Props {
-  /** The page's key in src/data/tools.ts, which also names it in breadcrumbs and "More tools". */
-  path: string;
+  /** The page's tool, which also names it in breadcrumbs and "More tools". */
+  tool: ToolId;
   title: string;
   description: string;
   heading: string;
+  /** The lede, which the layout ends with the line that nothing is uploaded. */
+  lede: string;
   applicationCategory?: string;
   /** Questions people search for, answered in plain text; shown on the page and marked up as an FAQ. */
-  faq?: [question: string, answer: string][];
+  faq?: string[][];
   /** For a variant of a tool (e.g. a fixed KB target), the URL it adds; breadcrumbs then go through the tool. */
   variant?: { path: string; name: string };
 }
 
-const { path, title, description, heading, applicationCategory = 'UtilitiesApplication', faq = [], variant } = Astro.props;
-const tool = toolAt(path);
-const og = slugOf(tool);
+const { tool, title, description, heading, lede, applicationCategory = 'UtilitiesApplication', faq = [], variant } = Astro.props;
+const { locale, t, href } = pageLocale(Astro.url);
+const path = href(toolPath(tool));
+const name = t.tools[tool].name;
+// Every language shares English's share images: one card per page per language is not worth its upkeep.
+const og = tool;
 ---
 
 <Base
@@ -30,19 +36,24 @@ const og = slugOf(tool);
   schema={[
     {
       '@type': 'WebApplication',
-      name: variant?.name ?? tool.name,
+      name: variant?.name ?? name,
       description,
-      url: new URL(variant?.path ?? path, Astro.site).href,
+      url: new URL(variant ? href(variant.path) : path, Astro.site).href,
       image: ogImage(og),
       applicationCategory,
       operatingSystem: 'Any',
       browserRequirements: 'Requires JavaScript',
-      inLanguage: 'en-IN',
+      inLanguage: `${locale}-IN`,
       isAccessibleForFree: true,
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'INR' },
       publisher: organization,
     },
-    breadcrumbs([['Manyx Labs', '/'], ['Tools', '/tools/'], [tool.name, path], ...(variant ? [[variant.name, variant.path] as [string, string]] : [])]),
+    breadcrumbs([
+      [t.crumbs.home, href('/')],
+      [t.crumbs.tools, href('/tools/')],
+      [name, path],
+      ...(variant ? [[variant.name, href(variant.path)] as [string, string]] : []),
+    ]),
     ...(faq.length
       ? [
           {
@@ -55,15 +66,15 @@ const og = slugOf(tool);
 >
   <Header />
 
-  <main class="wrap tool-page">
+  <main class="wrap page">
     <h1>{heading}</h1>
-    <p class="lede"><slot name="lede" /></p>
+    <p class="lede">{`${lede} ${t.onDevice}`}</p>
     <slot />
 
     {
       faq.length > 0 && (
         <section class="faq" aria-labelledby="faq-h">
-          <h2 id="faq-h">Questions</h2>
+          <h2 id="faq-h">{t.tool.questions}</h2>
           {faq.map(([q, a]) => (
             <details>
               <summary>{q}</summary>
@@ -75,14 +86,14 @@ const og = slugOf(tool);
     }
 
     <nav class="more" aria-labelledby="more-h">
-      <h2 id="more-h">More free tools</h2>
+      <h2 id="more-h">{t.tool.more}</h2>
       <ul>
         {
           tools
-            .filter((t) => t !== tool)
-            .map((t) => (
+            .filter((other) => other !== tool)
+            .map((other) => (
               <li>
-                <a href={t.path}>{t.name}</a>
+                <a href={href(toolPath(other))}>{t.tools[other].name}</a>
               </li>
             ))
         }
@@ -94,63 +105,60 @@ const og = slugOf(tool);
 </Base>
 
 <style>
-  main {
-    max-width: 760px;
-    padding-block: 32px 64px;
-  }
-
-  h1 {
-    font-size: clamp(1.75rem, 5vw, 2.5rem);
-    font-weight: 700;
-    line-height: 1.15;
-    letter-spacing: -0.03em;
-  }
-
-  .lede {
-    margin-top: 8px;
-    color: var(--muted);
-  }
-
   .more,
   .faq {
-    margin-top: 40px;
+    margin-top: 56px;
   }
 
-  .faq {
-    display: grid;
-    gap: 8px;
+  :is(.more, .faq) h2 {
+    font-size: 1.25rem;
+  }
+
+  .faq h2 {
+    margin-bottom: 8px;
   }
 
   details {
-    border-bottom: 1px solid var(--border);
-    padding-block: 10px;
+    border-bottom: 1px solid rgb(var(--fg) / 0.1);
+    padding-block: 14px;
   }
 
   summary {
-    font-weight: 550;
+    font-weight: 500;
     cursor: pointer;
   }
 
   details p {
-    margin-top: 6px;
-    color: var(--muted);
-  }
-
-  :is(.more, .faq) h2 {
-    font-size: 1.0625rem;
-    font-weight: 620;
+    margin-top: 8px;
+    color: rgb(var(--muted));
+    line-height: 1.625;
   }
 
   .more ul {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px 20px;
-    margin: 10px 0 0;
+    gap: 8px;
+    margin: 16px 0 0;
     padding: 0;
     list-style: none;
   }
 
   .more a {
-    color: var(--accent);
+    display: block;
+    padding: 6px 14px;
+    border: 1px solid rgb(var(--fg) / 0.1);
+    border-radius: 999px;
+    background: rgb(var(--fg) / 0.05);
+    color: rgb(var(--fg) / 0.8);
+    font-size: 0.875rem;
+    text-decoration: none;
+    transition:
+      color 0.2s,
+      background-color 0.2s;
+  }
+
+  .more a:hover {
+    background: rgb(var(--fg) / 0.1);
+    color: rgb(var(--fg));
   }
 </style>

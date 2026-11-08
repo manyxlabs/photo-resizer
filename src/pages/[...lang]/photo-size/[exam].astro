@@ -1,0 +1,249 @@
+---
+import Copy from '../../../components/Copy.astro';
+import Footer from '../../../components/Footer.astro';
+import Header from '../../../components/Header.astro';
+import { CHECKED, checkedOn, exams, guideTitle, kbRange, reportHref, type Exam, type FormSpec } from '../../../data/formSpecs';
+import { PHOTO_KB, SIGN_KB } from '../../../data/tools';
+import { catalogues, listOf, pageLocale } from '../../../i18n';
+import { fmt, graphemes } from '../../../i18n/format';
+import { LANG_PARAMS } from '../../../i18n/locales';
+import Base from '../../../layouts/Base.astro';
+import { breadcrumbs } from '../../../seo';
+
+export function getStaticPaths() {
+  return LANG_PARAMS.flatMap((lang) => exams.map((exam) => ({ params: { lang, exam: exam.id }, props: { exam } })));
+}
+
+const { exam } = Astro.props as { exam: Exam };
+const { locale, t, href } = pageLocale(Astro.url);
+const g = t.guide;
+const name = t.exams[exam.id].name;
+const noun = (spec: FormSpec) => t.specs[spec.id].noun;
+const list = (words: string[]) => listOf(locale, words);
+const what = list(exam.specs.map(noun));
+const title = guideTitle(t, exam);
+// `covers` starts a line on the index; mid-sentence its first word loses the capital, unless it is an acronym.
+const covers = t.exams[exam.id].covers.replace(/^[A-Z](?=[a-z])/, (c) => c.toLowerCase());
+const page = href(`/photo-size/${exam.id}/`);
+const summary = exam.specs
+  .slice(0, 2)
+  .map((s) => fmt(g.summary, { spec: noun(s), width: s.width, height: s.height, range: kbRange(t.sizes, s) }))
+  .join('; ');
+// The longest description that still fits a search result (155 characters).
+const description = [fmt(g.whoCovers, { exam: name, covers }), fmt(g.whoYear, { exam: name, year: CHECKED.year })]
+  .map((who) => fmt(exam.specs.length > 2 ? g.descriptionMore : g.description, { who, summary }))
+  .find((d, i, all) => graphemes(d) <= 155 || i === all.length - 1)!;
+const toolFor = (spec: FormSpec) => href(spec.scan ? '/tools/signature-resizer/' : '/tools/passport-photo/');
+const sizePage = (spec: FormSpec) =>
+  spec.scan
+    ? SIGN_KB.includes(spec.maxKB) && { name: fmt(t.sizes.signUnder, { kb: spec.maxKB }), href: href(`/tools/signature-resizer/${spec.maxKB}-kb/`) }
+    : PHOTO_KB.includes(spec.maxKB) && { name: fmt(t.sizes.photoUnder, { kb: spec.maxKB }), href: href(`/tools/photo-resizer/${spec.maxKB}-kb/`) };
+const photos = exam.specs.filter((s) => !s.scan);
+const scans = exam.specs.filter((s) => s.scan);
+const named = exam.specs.filter((s) => s.fileName).map((s) => `${s.fileName}.jpg`);
+const steps: [name: string, text: string][] = [
+  [
+    g.steps.picture,
+    [photos.length > 0 && g.steps.pictureText, scans.length > 0 && fmt(g.steps.pictureScans, { specs: list(scans.map(noun)) })]
+      .filter(Boolean)
+      .join(' '),
+  ],
+  [fmt(g.steps.open, { exam: name }), exam.specs.some((s) => s.physical) ? g.steps.openTextDpi : g.steps.openText],
+  [g.steps.adjust, named.length ? fmt(g.steps.adjustTextNamed, { files: list(named) }) : g.steps.adjustText],
+  [g.steps.upload, fmt(g.steps.uploadText, { exam: name })],
+];
+// The IBPS declaration has to be written in English, so every language quotes it as it is.
+const declaration = {
+  text: '"I, (your name), hereby declare that all the information submitted by me in the application form is correct, true and valid. I will present the supporting documents as and when required."',
+  lang: 'en',
+};
+---
+
+<Base
+  title={title}
+  description={description}
+  og={`guide-${exam.id}`}
+  schema={[
+    {
+      '@type': 'HowTo',
+      name: fmt(g.howTo, { exam: name, specs: what }),
+      tool: [...new Set(exam.specs.map((s) => t.tools[s.scan ? 'signature-resizer' : 'passport-photo'].name))].map((name) => ({ '@type': 'HowToTool', name })),
+      step: steps.map(([name, text], i) => ({ '@type': 'HowToStep', position: i + 1, name, text, url: `${new URL(page, Astro.site)}#step-${i + 1}` })),
+    },
+    breadcrumbs([
+      [t.crumbs.home, href('/')],
+      [t.crumbs.guides, href('/photo-size/')],
+      [title, page],
+    ]),
+  ]}
+>
+  <Header />
+
+  <main class="wrap page">
+    <p class="eyebrow">{g.eyebrow}</p>
+    <h1>{title}</h1>
+    <p class="lede">{fmt(g.lede, { exam: name, covers, checked: checkedOn(locale) })}</p>
+
+    {
+      exam.specs.map((spec) => {
+        const size = sizePage(spec);
+        const px = { width: spec.width, height: spec.height };
+        return (
+          <section class="spec glass spotlight reveal" aria-labelledby={`${spec.id}-h`} id={spec.id}>
+            <h2 id={`${spec.id}-h`}>{t.specs[spec.id].label}</h2>
+            <dl>
+              <dt>{g.size}</dt>
+              <dd>{spec.physical ? fmt(g.pixelsCm, { ...px, w: spec.physical.w, h: spec.physical.h, dpi: spec.physical.dpi }) : fmt(g.pixels, px)}</dd>
+              <dt>{g.fileSize}</dt>
+              <dd>{kbRange(t.sizes, spec)}</dd>
+              <dt>{g.format}</dt>
+              <dd>{spec.fileName ? fmt(g.jpgNamed, { file: `${spec.fileName}.jpg` }) : g.jpg}</dd>
+            </dl>
+            <div class="go">
+              <a class="btn btn-primary" href={`${toolFor(spec)}?preset=${spec.id}`}>
+                {fmt(g.resize, { exam: name, spec: noun(spec) })}
+              </a>
+              {size && <a href={size.href}>{size.name}</a>}
+            </div>
+          </section>
+        );
+      })
+    }
+
+    <section aria-labelledby="how">
+      <h2 id="how">{fmt(g.howTo, { exam: name, specs: what })}</h2>
+      <ol class="notes">
+        {
+          steps.map(([name, text], i) => (
+            <li id={`step-${i + 1}`}>
+              <strong>{name}.</strong> {text}
+            </li>
+          ))
+        }
+      </ol>
+    </section>
+
+    <section aria-labelledby="notes">
+      <h2 id="notes">{g.good}</h2>
+      <ul class="notes">
+        {
+          t.exams[exam.id].notes.map((note) => (
+            <li>
+              <Copy text={note} parts={{ declaration }} />
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    <p class="source">
+      <Copy
+        text={g.source}
+        parts={{
+          source: { text: t.exams[exam.id].source, href: exam.source },
+          report: { text: g.report, href: reportHref(catalogues.en, exam.specs[0]) },
+        }}
+      />
+    </p>
+
+    <p class="others">
+      {g.others}{' '}
+      {
+        exams
+          .filter((e) => e !== exam)
+          .map((e, i) => (
+            <>
+              {i > 0 && ' · '}
+              <a href={href(`/photo-size/${e.id}/`)}>{guideTitle(t, e)}</a>
+            </>
+          ))
+      }
+    </p>
+  </main>
+
+  <Footer />
+</Base>
+
+<style>
+  h2 {
+    font-size: 1.25rem;
+  }
+
+  .spec {
+    display: grid;
+    gap: 16px;
+    justify-items: start;
+    margin-top: 16px;
+    padding: 24px;
+    border-radius: 24px;
+  }
+
+  @media (min-width: 640px) {
+    .spec {
+      padding: 32px;
+    }
+  }
+
+  .spec:first-of-type {
+    margin-top: 40px;
+  }
+
+  .go {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 20px;
+    align-items: center;
+  }
+
+  /* A long spec name wraps on a phone; centred and tighter, it still reads as one button. */
+  .go .btn {
+    line-height: 1.35;
+    text-align: center;
+  }
+
+  dl {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 8px 20px;
+    margin: 0;
+  }
+
+  dt {
+    color: rgb(var(--muted));
+  }
+
+  dd {
+    margin: 0;
+    font-variant-numeric: tabular-nums;
+  }
+
+  section:not(.spec) {
+    margin-top: 56px;
+  }
+
+  .notes {
+    display: grid;
+    gap: 10px;
+    margin: 16px 0 0;
+    padding-left: 20px;
+    color: rgb(var(--muted));
+    line-height: 1.625;
+  }
+
+  .notes strong {
+    color: rgb(var(--fg));
+    font-weight: 600;
+  }
+
+  .source,
+  .others {
+    margin-top: 32px;
+    color: rgb(var(--muted));
+    font-size: 0.9375rem;
+    line-height: 1.625;
+  }
+
+  main a:not(.btn) {
+    color: rgb(var(--accent-text));
+  }
+</style>

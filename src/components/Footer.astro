@@ -1,20 +1,22 @@
 ---
+import { pageLocale } from '../i18n';
 import { EMAIL, FOUNDER, GITHUB } from '../site';
 
 const REPO = `${GITHUB}/photo-resizer`;
+const { t, href } = pageLocale(Astro.url);
 ---
 
 <footer class="wrap">
   <div class="foot">
-    <p>&copy; {new Date().getFullYear()} Manyx Labs, Bengaluru</p>
-    <nav aria-label="Elsewhere">
-      <a href="/tools/">Free tools</a>
-      <a href="/photo-size/">Size guides</a>
-      <a href={REPO} target="_blank" rel="noopener">Source</a>
-      <a href={`${REPO}/issues/new`} target="_blank" rel="noopener">Report an issue</a>
-      <a href={`${REPO}/blob/main/CONTRIBUTING.md`} target="_blank" rel="noopener">Contribute</a>
-      <a href={FOUNDER}>Founder</a>
-      <a href={`mailto:${EMAIL}`}>Email</a>
+    <p>&copy; {new Date().getFullYear()} {t.footer.place}</p>
+    <nav aria-label={t.footer.nav}>
+      <a href={href('/tools/')}>{t.footer.tools}</a>
+      <a href={href('/photo-size/')}>{t.footer.guides}</a>
+      <a href={REPO} target="_blank" rel="noopener">{t.footer.source}</a>
+      <a href={`${REPO}/issues/new`} target="_blank" rel="noopener">{t.footer.issue}</a>
+      <a href={`${REPO}/blob/main/CONTRIBUTING.md`} target="_blank" rel="noopener">{t.footer.contribute}</a>
+      <a href={FOUNDER}>{t.footer.founder}</a>
+      <a href={`mailto:${EMAIL}`}>{t.footer.email}</a>
     </nav>
   </div>
 </footer>
@@ -26,8 +28,8 @@ const REPO = `${GITHUB}/photo-resizer`;
     gap: 12px 24px;
     justify-content: space-between;
     padding-block: 32px 40px;
-    border-top: 1px solid var(--border);
-    color: var(--muted);
+    border-top: 1px solid rgb(var(--fg) / 0.1);
+    color: rgb(var(--muted));
     font-size: 0.875rem;
   }
 
@@ -42,6 +44,6 @@ const REPO = `${GITHUB}/photo-resizer`;
   }
 
   nav a:hover {
-    color: var(--text);
+    color: rgb(var(--fg));
   }
 </style>

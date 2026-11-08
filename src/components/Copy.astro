@@ -1,0 +1,25 @@
+---
+// A catalogue string whose {placeholders} are elements, such as a link inside a sentence, or values.
+interface Props {
+  text: string;
+  /** A link where it has an href or id, else text in another language (lang). */
+  parts?: Record<string, { text: string; href?: string; id?: string; lang?: string }>;
+  vars?: Record<string, string | number>;
+}
+
+const { text, parts = {}, vars = {} } = Astro.props;
+// split() with a capture group puts each placeholder's name at an odd index.
+const pieces = text.split(/\{(\w+)\}/);
+---
+
+{
+  pieces.map((piece, i) => {
+    if (i % 2 === 0) return piece;
+    const part = parts[piece];
+    // On one line each, so no whitespace ends up inside the element.
+    if (part?.href !== undefined || part?.id) return <a href={part.href} id={part.id}>{part.text}</a>;
+    if (part) return <span lang={part.lang}>{part.text}</span>;
+    if (!(piece in vars)) throw new Error(`No value for {${piece}} in "${text}"`);
+    return String(vars[piece]);
+  })
+}

@@ -1,5 +1,8 @@
 ---
-import { CHECKED, examOf, exams, outputLine, reportHref } from '../data/formSpecs';
+import { checkedOn, examOf, exams, outputLine, reportHref } from '../data/formSpecs';
+import { catalogues, pageLocale } from '../i18n';
+import { fmt } from '../i18n/format';
+import Copy from './Copy.astro';
 
 interface Props {
   /**
@@ -17,95 +20,105 @@ const ordered = kind === 'photo' ? [...exams].sort((a, b) => Number(b.id === 'pa
 const offered = ordered
   .map((exam) => ({ exam, specs: exam.specs.filter((s) => !kind || s.scan === (kind === 'scan')) }))
   .filter((g) => g.specs.length);
-const accepts = 'JPG, PNG, WebP, HEIC (iPhone), AVIF, TIFF, GIF or BMP';
+const { locale, t: all } = pageLocale(Astro.url);
+const t = all.resizer;
 // Rendered for the preset the page opens on, so the script filling them in shifts nothing.
 const first = maxKB === undefined ? offered[0]!.specs[0]! : undefined;
+// The script swaps these in as the preset changes, so it needs no catalogue of its own.
+const presets = Object.fromEntries(
+  offered.flatMap(({ exam, specs }) =>
+    specs.map((s) => [s.id, { source: all.exams[exam.id].source, url: exam.source, report: reportHref(catalogues.en, s) }]),
+  ),
+);
+const script = { js: t.js, sizes: all.sizes, presets, report: reportHref(catalogues.en) };
 ---
 
-<form id="tool" class="tool" data-kind={kind ?? ''} novalidate>
+<form id="tool" class="tool" data-kind={kind ?? ''} data-t={JSON.stringify(script)} novalidate>
   <section class="panel glass">
-    <h2><span>1</span> {kind === 'scan' ? 'Pick a photo or scan of your signature' : kind === 'photo' ? 'Pick your photo' : 'Pick a photo or scan'}</h2>
+    <h2><span>1</span> {kind === 'scan' ? t.pickScan : kind === 'photo' ? t.pickPhoto : t.pickAny}</h2>
     <label class="drop" id="drop">
       <input id="file" type="file" accept="image/*,.heic,.heif,.tif,.tiff" />
-      <strong>Choose an image</strong>
-      <span>or drop it here. {accepts}.</span>
+      <strong>{t.choose}</strong>
+      <span>{t.drop}</span>
     </label>
     <p id="file-status" class="hint" aria-live="polite" hidden></p>
     <p id="file-error" class="error" role="alert" hidden></p>
   </section>
 
   <section class="panel glass">
-    <h2><span>2</span> What does your form ask for?</h2>
+    <h2><span>2</span> {t.ask}</h2>
     <label class="field">
-      Form
+      {t.form}
       <select id="preset">
         {
           offered.map(({ exam, specs }) => (
-            <optgroup label={exam.name}>
+            <optgroup label={all.exams[exam.id].name}>
               {specs.map((s) => (
-                <option value={s.id}>
-                  {exam.name}: {s.label}
-                </option>
+                <option value={s.id}>{fmt(t.option, { exam: all.exams[exam.id].name, spec: all.specs[s.id].label })}</option>
               ))}
             </optgroup>
           ))
         }
-        <option value="custom" selected={maxKB !== undefined}>Custom size (type it from your form's notice)</option>
+        <option value="custom" selected={maxKB !== undefined}>{t.custom}</option>
       </select>
     </label>
 
     <div id="custom" class="grid" hidden>
-      <label class="field">Width <input id="w" type="number" min="1" step="any" inputmode="decimal" value={kind === 'scan' ? '6' : '3.5'} /></label>
-      <label class="field">Height <input id="h" type="number" min="1" step="any" inputmode="decimal" value={kind === 'scan' ? '2' : '4.5'} /></label>
+      <label class="field">{t.width} <input id="w" type="number" min="1" step="any" inputmode="decimal" value={kind === 'scan' ? '6' : '3.5'} /></label>
+      <label class="field">{t.height} <input id="h" type="number" min="1" step="any" inputmode="decimal" value={kind === 'scan' ? '2' : '4.5'} /></label>
       <label class="field">
-        Unit
+        {t.unit}
         <select id="unit">
-          <option value="cm">cm</option>
-          <option value="px">pixels</option>
+          <option value="cm">{t.cm}</option>
+          <option value="px">{t.pixels}</option>
         </select>
       </label>
-      <label class="field">DPI <input id="dpi" type="number" min="72" max="1200" step="1" value={kind === 'scan' ? '200' : '300'} /></label>
-      <label class="field">Min KB <input id="min" type="number" min="0" step="any" value={maxKB !== undefined ? '0' : kind === 'scan' ? '10' : '20'} /></label>
-      <label class="field">Max KB <input id="max" type="number" min="1" step="any" value={maxKB ?? (kind === 'scan' ? '20' : '50')} /></label>
+      <label class="field">{t.dpi} <input id="dpi" type="number" min="72" max="1200" step="1" value={kind === 'scan' ? '200' : '300'} /></label>
+      <label class="field">{t.minKB} <input id="min" type="number" min="0" step="any" value={maxKB !== undefined ? '0' : kind === 'scan' ? '10' : '20'} /></label>
+      <label class="field">{t.maxKB} <input id="max" type="number" min="1" step="any" value={maxKB ?? (kind === 'scan' ? '20' : '50')} /></label>
     </div>
     <p id="spec-error" class="error" role="alert" hidden></p>
-    <p id="spec" class="hint">{first && outputLine(first)}</p>
+    <p id="spec" class="hint">{first && outputLine(all.sizes, first)}</p>
     <p class="hint">
       <span id="source" hidden={!first}>
-        Source: <a id="source-link" href={first && examOf(first).source.url}>{first && examOf(first).source.label}</a>, checked {`${CHECKED.month} ${CHECKED.year}`}.{' '}
+        <Copy
+          text={t.source}
+          parts={{ source: { text: first ? presets[first.id]!.source : '', href: first && examOf(first).source, id: 'source-link' } }}
+          vars={{ checked: checkedOn(locale) }}
+        />{' '}
       </span>
-      Rules change, so check yours before you submit. <a id="report" href={reportHref()}>Spec wrong or changed?</a>
+      {t.rules} <a id="report" href={script.report}>{t.report}</a>
     </p>
   </section>
 
   <section class="panel glass" id="adjust" hidden>
-    <h2><span>3</span> Adjust and download</h2>
+    <h2><span>3</span> {t.adjust}</h2>
     <div class="stage">
-      <canvas id="canvas" tabindex="0" aria-label="Preview. Drag or use arrow keys to move the image."></canvas>
+      <canvas id="canvas" tabindex="0" aria-label={t.preview}></canvas>
     </div>
     <label class="field">
-      Zoom
+      {t.zoom}
       <input id="zoom" type="range" min="0" max="1" step="0.001" value="0" />
     </label>
     <div class="options">
-      <label class="check" id="clean-row"><input id="clean" type="checkbox" /> Clean up the paper background</label>
+      <label class="check" id="clean-row"><input id="clean" type="checkbox" /> {t.clean}</label>
       <label class="field ink" id="ink-row">
-        Ink
+        {t.ink}
         <select id="ink">
-          <option value="as-written">As written</option>
-          <option value="black">Black</option>
-          <option value="blue">Blue</option>
+          <option value="as-written">{t.asWritten}</option>
+          <option value="black">{t.black}</option>
+          <option value="blue">{t.blue}</option>
         </select>
       </label>
-      <label class="check" id="white-row"><input id="white" type="checkbox" /> Replace the background with white</label>
+      <label class="check" id="white-row"><input id="white" type="checkbox" /> {t.white}</label>
     </div>
     <p id="work" class="hint" aria-live="polite" hidden></p>
 
     <div class="result">
       <p id="result" aria-live="polite"></p>
       <div class="actions">
-        <button id="sheet" class="btn" type="button" hidden>Download 6 × 4 in print sheet</button>
-        <a id="download" class="btn primary" download hidden>Download JPG</a>
+        <button id="sheet" class="btn btn-glass" type="button" hidden>{t.sheet}</button>
+        <a id="download" class="btn btn-primary" download hidden>{t.download}</a>
       </div>
     </div>
   </section>
@@ -116,7 +129,9 @@ const first = maxKB === undefined ? offered[0]!.specs[0]! : undefined;
   import { fitJpeg, maxBytes, minBytes, withDpi } from '../lib/jpeg';
   import { cleanScan, type Ink } from '../lib/scan';
   import type { Box } from '../lib/vision';
-  import { examOf, exams, outputLine, reportHref, type FormSpec } from '../data/formSpecs';
+  import { exams, outputLine, type FormSpec, type SpecId } from '../data/formSpecs';
+  import type { Messages } from '../i18n/en';
+  import { fmt } from '../i18n/format';
 
   const formSpecs = exams.flatMap((e) => e.specs);
 
@@ -160,6 +175,12 @@ const first = maxKB === undefined ? offered[0]!.specs[0]! : undefined;
   const download = $<HTMLAnchorElement>('download');
   const sheet = $<HTMLButtonElement>('sheet');
   const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
+  const { js: t, sizes, presets, report: reportAny }: {
+    js: Messages['resizer']['js'];
+    sizes: Messages['sizes'];
+    presets: Partial<Record<SpecId, { source: string; url: string; report: string }>>;
+    report: string;
+  } = JSON.parse(form.dataset.t!);
   const num = (id: string) => Number($<HTMLInputElement>(id).value);
 
   let image: ImageBitmap | null = null;
@@ -187,11 +208,11 @@ const first = maxKB === undefined ? offered[0]!.specs[0]! : undefined;
     const dpi = num('dpi');
     const toPx = (v: number) => Math.round(cm ? (v / 2.54) * dpi : v);
     const [width, height, minKB, maxKB] = [toPx(num('w')), toPx(num('h')), num('min'), num('max')];
-    if (!Number.isInteger(dpi) || dpi < 72 || dpi > 1200) return 'DPI must be a whole number from 72 to 1200.';
+    if (!Number.isInteger(dpi) || dpi < 72 || dpi > 1200) return t.dpiRange;
     if (!(width >= 16 && height >= 16 && width <= 6000 && height <= 6000))
-      return 'Width and height must each come to between 16 and 6000 pixels.';
-    if (!(maxKB > 0) || !(minKB >= 0)) return 'Enter the KB limits from your form.';
-    if (minBytes(minKB) >= maxBytes(maxKB)) return 'Min KB must be smaller than max KB.';
+      return t.sizeRange;
+    if (!(maxKB > 0) || !(minKB >= 0)) return t.needKB;
+    if (minBytes(minKB) >= maxBytes(maxKB)) return t.minUnderMax;
     const physical = cm ? { w: num('w'), h: num('h'), dpi } : undefined;
     return { width, height, min: minBytes(minKB), max: maxBytes(maxKB), minKB, maxKB, dpi, scan: kind === 'scan', physical };
   }
@@ -229,17 +250,17 @@ const first = maxKB === undefined ? offered[0]!.specs[0]! : undefined;
 
   function startView() {
     if (!image || !target) return;
-    const t = target;
-    const { cover, filled } = bounds(image, t);
-    zoom.value = String(t.scan ? 0 : filled);
+    const tg = target;
+    const { cover, filled } = bounds(image, tg);
+    zoom.value = String(tg.scan ? 0 : filled);
     const s = scale();
-    offset = { x: (t.width - image.width * s) / 2, y: (t.height - image.height * s) / 2 };
-    const box = t.scan ? cleaned?.inkBox : face;
+    offset = { x: (tg.width - image.width * s) / 2, y: (tg.height - image.height * s) / 2 };
+    const box = tg.scan ? cleaned?.inkBox : face;
     if (!box) return;
-    if (t.scan) frame(box, Math.min(t.width / box.width, t.height / box.height) * 0.86, { x: 0.5, y: 0.5 });
+    if (tg.scan) frame(box, Math.min(tg.width / box.width, tg.height / box.height) * 0.86, { x: 0.5, y: 0.5 });
     // A passport-style crop. The head, crown to chin, is about 1.4 times the detected face box
     // and starts about half a box above it; this makes it 72% of the height, 8% from the top.
-    else frame(box, Math.max(cover, (t.height * 0.52) / box.height), { x: 0.5, y: 0.62 });
+    else frame(box, Math.max(cover, (tg.height * 0.52) / box.height), { x: 0.5, y: 0.62 });
   }
 
   function drawn(): ImageBitmap | null {
@@ -278,7 +299,7 @@ const first = maxKB === undefined ? offered[0]!.specs[0]! : undefined;
     const fit = await fitJpeg(encode, target);
     if (mine !== job) return;
     if (!fit.ok) {
-      result.textContent = `Even at the lowest quality this is ${kb(fit.smallest)}, over the limit. Use fewer pixels or a higher max KB.`;
+      result.textContent = fmt(t.tooBig, { size: kb(fit.smallest) });
       return;
     }
     URL.revokeObjectURL(url);
@@ -287,9 +308,9 @@ const first = maxKB === undefined ? offered[0]!.specs[0]! : undefined;
     download.download = target.fileName ? `${target.fileName}.jpg` : `${preset.value === 'custom' ? 'image' : preset.value}-${width}x${height}.jpg`;
     download.hidden = false;
     result.textContent =
-      `${width} × ${height} px · ${kb(fit.jpeg.length)} · JPG` +
-      (dpi ? ` · ${dpi} DPI` : '') +
-      (fit.padded ? ' · padded to reach the minimum size' : ` · quality ${Math.round(fit.quality * 100)}%`);
+      fmt(t.result, { width, height, size: kb(fit.jpeg.length) }) +
+      (dpi ? fmt(t.resultDpi, { dpi }) : '') +
+      (fit.padded ? t.padded : fmt(t.quality, { quality: Math.round(fit.quality * 100) }));
   }
 
   let timer = 0;
@@ -318,7 +339,7 @@ const first = maxKB === undefined ? offered[0]!.specs[0]! : undefined;
     const needFace = kind === 'photo' && face === undefined;
     const needWhite = !target.scan && white.checked && !whitened;
     if (!needFace && !needWhite) return true;
-    show(work, needWhite ? 'Finding the background… (the first time fetches about 13 MB)' : 'Finding the face…');
+    show(work, needWhite ? t.findingBackground : t.findingFace);
     try {
       const { findFace, onWhite } = await import('../lib/vision');
       if (needFace) {
@@ -336,7 +357,7 @@ const first = maxKB === undefined ? offered[0]!.specs[0]! : undefined;
       if (img !== image) return false;
       if (needFace) face = null;
       if (needWhite) white.checked = false;
-      show(work, needWhite ? "Couldn't replace the background. Check your connection and try again." : '');
+      show(work, needWhite ? t.backgroundFailed : '');
     }
     return true;
   }
@@ -351,17 +372,16 @@ const first = maxKB === undefined ? offered[0]!.specs[0]! : undefined;
 
   async function applyTarget() {
     custom.hidden = preset.value !== 'custom';
-    const spec = formSpecs.find((s) => s.id === preset.value);
+    const spec = presets[preset.value as SpecId];
     source.hidden = !spec;
     if (spec) {
-      const { source: from } = examOf(spec);
-      sourceLink.href = from.url;
-      sourceLink.textContent = from.label;
+      sourceLink.href = spec.url;
+      sourceLink.textContent = spec.source;
     }
-    report.href = reportHref(spec);
-    const t = readTarget();
-    if (typeof t === 'string') {
-      show(specError, t);
+    report.href = spec?.report ?? reportAny;
+    const next = readTarget();
+    if (typeof next === 'string') {
+      show(specError, next);
       target = null;
       download.hidden = true;
       sheet.hidden = true;
@@ -369,15 +389,15 @@ const first = maxKB === undefined ? offered[0]!.specs[0]! : undefined;
       return;
     }
     show(specError, '');
-    specLine.textContent = outputLine(t);
-    const changedShape = !target || target.width !== t.width || target.height !== t.height || target.scan !== t.scan;
-    target = t;
-    canvas.width = t.width;
-    canvas.height = t.height;
-    canvas.style.setProperty('--ratio', String(t.width / t.height));
+    specLine.textContent = outputLine(sizes, next);
+    const changedShape = !target || target.width !== next.width || target.height !== next.height || target.scan !== next.scan;
+    target = next;
+    canvas.width = next.width;
+    canvas.height = next.height;
+    canvas.style.setProperty('--ratio', String(next.width / next.height));
     if (changedShape && image) {
       // Scans start cleaned and trimmed to the ink, since a cropped signature is useless.
-      clean.checked = t.scan;
+      clean.checked = next.scan;
       showOptions();
       if (!(await prepare())) return;
       startView();
@@ -397,14 +417,14 @@ const first = maxKB === undefined ? offered[0]!.specs[0]! : undefined;
     if (!file) return;
     const mine = ++opening;
     show(fileError, '');
-    show(fileStatus, `Opening "${file.name}"…`);
+    show(fileStatus, fmt(t.opening, { name: file.name }));
     let next: ImageBitmap;
     try {
       next = await openImage(file);
     } catch {
       if (mine === opening) {
         show(fileStatus, '');
-        show(fileError, `Couldn't open "${file.name}". Use a photo or scan: JPG, PNG, WebP, HEIC, AVIF, TIFF, GIF or BMP.`);
+        show(fileError, fmt(t.cantOpen, { name: file.name }));
       }
       return;
     }
@@ -530,7 +550,7 @@ const first = maxKB === undefined ? offered[0]!.specs[0]! : undefined;
     /* Wide signatures are capped by width, tall photos by height, so the box always matches the image. */
     width: min(100%, 360px, 420px * var(--ratio, 1));
     aspect-ratio: var(--ratio, 1);
-    box-shadow: 0 0 0 1px var(--border);
+    box-shadow: 0 0 0 1px rgb(var(--fg) / 0.1);
     cursor: grab;
     touch-action: none;
   }

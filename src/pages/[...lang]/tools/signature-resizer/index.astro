@@ -1,0 +1,23 @@
+---
+import Explainer from '../../../../components/Explainer.astro';
+import Resizer from '../../../../components/Resizer.astro';
+import SizeLinks from '../../../../components/SizeLinks.astro';
+import { pageLocale } from '../../../../i18n';
+import { LANG_PARAMS } from '../../../../i18n/locales';
+import Tool from '../../../../layouts/Tool.astro';
+
+export const getStaticPaths = () => LANG_PARAMS.map((lang) => ({ params: { lang } }));
+
+const { t } = pageLocale(Astro.url);
+const page = t.signatureResizer;
+---
+
+<Tool tool="signature-resizer" title={page.title} description={page.description} faq={page.faq} heading={page.heading} lede={page.lede}>
+  <Resizer kind="scan" />
+
+  <Explainer title={t.tool.howItWorks}>
+    {page.how.map((item) => <li>{item}</li>)}
+  </Explainer>
+
+  <SizeLinks kind="scan" />
+</Tool>

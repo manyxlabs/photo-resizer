@@ -109,7 +109,7 @@ export default {
     },
     ssc: {
       name: 'SSC',
-      title: 'SSC ফটো ও সিগনেচার সাইজ {year}',
+      title: 'SSC CGL ফটো ও সিগনেচার সাইজ {year}',
       covers: 'CGL, CHSL, JE ও Stenographer 2026',
       source: 'SSC CGL 2026 নোটিস, অনুচ্ছেদ 9.6',
       notes: [

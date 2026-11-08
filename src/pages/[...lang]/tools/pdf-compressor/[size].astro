@@ -1,0 +1,53 @@
+---
+import PdfCompressor from '../../../../components/PdfCompressor.astro';
+import { PDF_KB, sizeLabel, sizeSlug } from '../../../../data/tools';
+import { pageLocale } from '../../../../i18n';
+import { fmt } from '../../../../i18n/format';
+import { LANG_PARAMS } from '../../../../i18n/locales';
+import Tool from '../../../../layouts/Tool.astro';
+
+export function getStaticPaths() {
+  return LANG_PARAMS.flatMap((lang) => PDF_KB.map((kb) => ({ params: { lang, size: sizeSlug(kb) }, props: { kb } })));
+}
+
+const { kb } = Astro.props as { kb: number };
+const size = sizeLabel(kb);
+const { t, href } = pageLocale(Astro.url);
+const page = t.pdf;
+---
+
+<Tool
+  tool="pdf-compressor"
+  variant={{ path: `/tools/pdf-compressor/${sizeSlug(kb)}/`, name: fmt(t.sizes.pdfUnder, { size }) }}
+  title={fmt(page.under.title, { size })}
+  description={fmt(page.under.description, { size })}
+  heading={fmt(page.under.heading, { size })}
+  lede={fmt(page.under.lede, { size })}
+  faq={page.faq}
+>
+  <PdfCompressor defaultKB={kb} />
+
+  <p class="sizes">
+    {page.otherSizes}{' '}
+    {
+      PDF_KB.filter((s) => s !== kb).map((s, i) => (
+        <>
+          {i > 0 && ' · '}
+          <a href={href(`/tools/pdf-compressor/${sizeSlug(s)}/`)}>{fmt(t.sizes.pdfUnder, { size: sizeLabel(s) })}</a>
+        </>
+      ))
+    }
+  </p>
+</Tool>
+
+<style>
+  .sizes {
+    margin-top: 24px;
+    color: rgb(var(--muted));
+    font-size: 0.9375rem;
+  }
+
+  .sizes a {
+    color: rgb(var(--accent-text));
+  }
+</style>

@@ -1,0 +1,116 @@
+---
+import Copy from '../../../components/Copy.astro';
+import Footer from '../../../components/Footer.astro';
+import Header from '../../../components/Header.astro';
+import { CHECKED, checkedOn, exams, kbRange } from '../../../data/formSpecs';
+import { listOf, pageLocale } from '../../../i18n';
+import { fmt } from '../../../i18n/format';
+import { LANG_PARAMS } from '../../../i18n/locales';
+import Base from '../../../layouts/Base.astro';
+import { breadcrumbs } from '../../../seo';
+
+export const getStaticPaths = () => LANG_PARAMS.map((lang) => ({ params: { lang } }));
+
+const { locale, t, href } = pageLocale(Astro.url);
+// PAN appears once, for both of its routes: each name keeps its qualifier in brackets.
+const named = new Set(exams.map((e) => t.exams[e.id].name.split(' (')[0]!));
+---
+
+<Base
+  title={fmt(t.guides.title, { year: CHECKED.year })}
+  description={fmt(t.guides.description, { exams: listOf(locale, named) })}
+  og="photo-size"
+  schema={[
+    {
+      '@type': 'ItemList',
+      name: t.guides.listName,
+      itemListElement: exams.map((e, i) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        name: t.exams[e.id].name,
+        url: new URL(href(`/photo-size/${e.id}/`), Astro.site).href,
+      })),
+    },
+    breadcrumbs([
+      [t.crumbs.home, href('/')],
+      [t.crumbs.guides, href('/photo-size/')],
+    ]),
+  ]}
+>
+  <Header />
+
+  <main class="wrap page">
+    <h1 class="text-sheen">{t.guides.heading}</h1>
+    <p class="lede">
+      <Copy text={t.guides.lede} parts={{ resizer: { text: t.guides.resizer, href: href('/tools/photo-resizer/') } }} vars={{ checked: checkedOn(locale) }} />
+    </p>
+
+    <ul class="list">
+      {
+        exams.map((exam, i) => (
+          <li>
+            <a class="glass spotlight reveal" style={`--i: ${i}`} href={href(`/photo-size/${exam.id}/`)}>
+              <h2>{t.exams[exam.id].name}</h2>
+              <p>{t.exams[exam.id].covers}</p>
+              <ul class="specs">
+                {exam.specs.map((s) => (
+                  <li class="chip">{fmt(t.guides.spec, { spec: t.specs[s.id].label, width: s.width, height: s.height, range: kbRange(t.sizes, s) })}</li>
+                ))}
+              </ul>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </main>
+
+  <Footer />
+</Base>
+
+<style>
+  .lede :global(a) {
+    color: rgb(var(--accent-text));
+  }
+
+  .list {
+    display: grid;
+    gap: 16px;
+    margin: 40px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .list a {
+    display: grid;
+    gap: 8px;
+    padding: 24px;
+    border-radius: 24px;
+    text-decoration: none;
+  }
+
+  @media (min-width: 640px) {
+    .list a {
+      padding: 32px;
+    }
+  }
+
+  h2 {
+    font-size: 1.125rem;
+  }
+
+  .list p {
+    color: rgb(var(--muted));
+    font-size: 0.9375rem;
+    line-height: 1.625;
+  }
+
+  .specs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 8px 0 0;
+    padding: 0;
+    list-style: none;
+    font-variant-numeric: tabular-nums;
+  }
+</style>

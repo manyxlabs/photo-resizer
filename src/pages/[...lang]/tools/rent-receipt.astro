@@ -1,98 +1,75 @@
 ---
-import Explainer from '../../components/Explainer.astro';
-import Tool from '../../layouts/Tool.astro';
+import Copy from '../../../components/Copy.astro';
+import Explainer from '../../../components/Explainer.astro';
+import { pageLocale } from '../../../i18n';
+import { LANG_PARAMS } from '../../../i18n/locales';
+import Tool from '../../../layouts/Tool.astro';
+
+export const getStaticPaths = () => LANG_PARAMS.map((lang) => ({ params: { lang } }));
+
+const { locale, t: all } = pageLocale(Astro.url);
+const t = all.rent;
+const links = {
+  tax: { text: t.taxDept, href: 'https://www.incometaxindia.gov.in/w/income-from-salary' },
+  form: { text: t.form124, href: 'https://www.incometaxindia.gov.in/documents/d/guest/form-124-faqs' },
+  act: { text: t.stampAct, href: 'https://www.indiacode.nic.in/handle/123456789/15510' },
+};
 ---
 
-<Tool
-  path="/tools/rent-receipt/"
-  title="Rent receipt generator for HRA, free PDF"
-  description="Make a rent receipt for every month you paid, with the amount in words and a revenue stamp box for cash over ₹5,000. Print or save as PDF for HRA. Free."
-  heading="Rent receipt generator for HRA"
-  applicationCategory="BusinessApplication"
-  faq={[
-    [
-      'Is landlord PAN mandatory for HRA?',
-      "Only if the rent you pay in the year is over ₹1,00,000. Then your employer needs your landlord's PAN, under CBDT Circular 8/2013 and now Form 124. If your landlord has no PAN, a declaration from them with their name and address is accepted instead.",
-    ],
-    [
-      'Do rent receipts need a revenue stamp?',
-      'Article 53 of the Indian Stamp Act, 1899 charges ₹1 stamp duty on a receipt for more than ₹5,000. Employers usually ask for a ₹1 revenue stamp, signed across by the landlord, on receipts for rent paid in cash.',
-    ],
-    [
-      'Can I pay rent to my parents and claim HRA?',
-      "Usually, if you really pay them rent for a home they own, and they show it as income in their tax return. Keep proof of the payments, such as bank transfers, since this is often checked. Form 124, which replaced Form 12BB from 1 April 2026, asks for your relationship with the landlord, so say that it's a parent.",
-    ],
-    [
-      'How many rent receipts do I need to give my employer?',
-      'Usually one for each month you claim HRA for, which is what this tool makes. Your employer decides, so check its HRA proof checklist.',
-    ],
-    [
-      'Do I need a rent receipt if I pay rent by UPI or bank transfer?',
-      'Most employers still ask for a receipt signed by the landlord. The receipt states the payment mode, and a bank or UPI statement backs it up.',
-    ],
-  ]}
->
-  <Fragment slot="lede">
-    One receipt for each month you paid rent, ready to sign and hand to your employer for HRA. It all happens on your
-    device; nothing is uploaded.
-  </Fragment>
-
-  <form id="tool" class="tool" novalidate>
+<Tool tool="rent-receipt" title={t.title} description={t.description} heading={t.heading} lede={t.lede} faq={t.faq}>
+  <form id="tool" class="tool" novalidate data-t={JSON.stringify(t.js)}>
     <section class="panel glass">
-      <h2><span>1</span> Tenant, landlord and home</h2>
+      <h2><span>1</span> {t.parties}</h2>
       <div class="pair">
-        <label class="field">Tenant's name <input id="tenant" type="text" autocomplete="name" /></label>
-        <label class="field">Landlord's name <input id="landlord" type="text" /></label>
+        <label class="field">{t.tenant} <input id="tenant" type="text" autocomplete="name" /></label>
+        <label class="field">{t.landlord} <input id="landlord" type="text" /></label>
       </div>
       <label class="field">
-        Landlord's PAN (optional)
+        {t.pan}
         <input id="pan" type="text" maxlength="10" autocapitalize="characters" spellcheck="false" placeholder="ABCDE1234F" />
       </label>
       <p id="pan-error" class="error" role="alert" hidden></p>
-      <p class="hint">
-        Your employer will ask for it if the rent you pay in the year is over ₹1,00,000, under the CBDT's rules for HRA.
-      </p>
-      <label class="field">Address of the rented home <textarea id="address" rows="3"></textarea></label>
+      <p class="hint">{t.panHint}</p>
+      <label class="field">{t.address} <textarea id="address" rows="3"></textarea></label>
     </section>
 
     <section class="panel glass">
-      <h2><span>2</span> Rent and months</h2>
+      <h2><span>2</span> {t.rentAndMonths}</h2>
       <div class="pair">
-        <label class="field">Monthly rent (₹) <input id="rent" type="text" inputmode="decimal" placeholder="15000" /></label>
+        <label class="field">{t.monthly} <input id="rent" type="text" inputmode="decimal" placeholder="15000" /></label>
         <label class="field">
-          Paid by
+          {t.paidBy}
+          {/* The values are what the receipt says, so they stay English. */}
           <select id="mode">
-            <option value="cash">Cash</option>
-            <option value="UPI">UPI</option>
-            <option value="bank transfer">Bank transfer</option>
-            <option value="cheque">Cheque</option>
+            <option value="cash">{t.cash}</option>
+            <option value="UPI">{t.upi}</option>
+            <option value="bank transfer">{t.bank}</option>
+            <option value="cheque">{t.cheque}</option>
           </select>
         </label>
-        <label class="field">From <input id="from" type="month" placeholder="2026-04" /></label>
-        <label class="field">To <input id="to" type="month" placeholder="2027-03" /></label>
+        <label class="field">{t.from} <input id="from" type="month" placeholder="2026-04" /></label>
+        <label class="field">{t.to} <input id="to" type="month" placeholder="2027-03" /></label>
       </div>
       <p id="rent-error" class="error" role="alert" hidden></p>
       <p id="range-error" class="error" role="alert" hidden></p>
     </section>
 
     <section class="panel glass">
-      <h2><span>3</span> Print or save as PDF</h2>
+      <h2><span>3</span> {t.print}</h2>
       <div class="result">
         <p id="summary" aria-live="polite"></p>
-        <button id="print" class="btn primary" type="button">Print or save as PDF</button>
+        <button id="print" class="btn btn-primary" type="button">{t.print}</button>
       </div>
       <ul id="problems" class="error" role="alert" hidden></ul>
-      <p class="hint">
-        To get a PDF, pick "Save as PDF" as the printer in the print dialog. Sign each receipt, and on cash receipts
-        with a revenue stamp box, have your landlord sign across a ₹1 revenue stamp.
-      </p>
+      <p class="hint">{t.printHint}</p>
+      {locale !== 'en' && <p class="hint">{t.english}</p>}
     </section>
   </form>
 
-  <div id="receipts" class="sheets" aria-label="Receipt preview"></div>
+  <div id="receipts" class="sheets" aria-label={t.preview} lang="en"></div>
   <p id="more" class="hint more" hidden></p>
 
-  <template id="receipt">
+  <template id="receipt" lang="en">
     <article class="receipt">
       <header>
         <h3>Rent receipt</h3>
@@ -114,34 +91,21 @@ import Tool from '../../layouts/Tool.astro';
     </article>
   </template>
 
-  <Explainer title="The rules these receipts follow">
-    <li>
-      Employers ask for rent receipts to allow the HRA exemption. If the rent you pay in a year is over ₹1,00,000,
-      they also need your landlord's PAN. The <a href="https://www.incometaxindia.gov.in/w/income-from-salary"
-        >Income Tax Department</a
-      > has asked for it since CBDT Circular 8/2013, and from 1 April 2026 it is part of <a
-        href="https://www.incometaxindia.gov.in/documents/d/guest/form-124-faqs">Form 124</a
-      >, which replaced Form 12BB under the Income-tax Act, 2025. If your landlord has no PAN, the department accepts a
-      declaration from them with their name and address instead.
-    </li>
-    <li>
-      Under <a href="https://www.indiacode.nic.in/handle/123456789/15510">Article 53 of the Indian Stamp Act, 1899</a>,
-      a receipt for more than ₹5,000 carries a ₹1 stamp duty, paid by fixing a revenue stamp that the landlord signs
-      across. The box appears on cash receipts over ₹5,000, the ones employers check for it; a UPI, bank or cheque
-      payment has a bank record of its own. If your employer wants stamps on those too, add one.
-    </li>
-    <li>
-      Each receipt is numbered by its month, so printing them again gives the same numbers.
-    </li>
-    <li>
-      This is a convenience, not tax advice. Your employer decides what it accepts, so check with them if you're unsure.
-      Your names and address are remembered in this browser to save typing next time; nothing leaves your device.
-    </li>
+  <Explainer title={t.rules}>
+    {
+      t.how.map((item) => (
+        <li>
+          <Copy text={item} parts={links} />
+        </li>
+      ))
+    }
   </Explainer>
 </Tool>
 
 <script>
-  import { inWords, isPan, rupees, toPaise } from '../../lib/money';
+  import type { Messages } from '../../../i18n/en';
+  import { fmt, plural } from '../../../i18n/format';
+  import { inWords, isPan, rupees, toPaise } from '../../../lib/money';
 
   const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
   const field = (id: string) => $<HTMLInputElement>(id);
@@ -150,6 +114,7 @@ import Tool from '../../layouts/Tool.astro';
   const template = $<HTMLTemplateElement>('receipt');
   const summary = $<HTMLParagraphElement>('summary');
   const problems = $<HTMLUListElement>('problems');
+  const t: Messages['rent']['js'] = JSON.parse($('tool').dataset.t!);
   const KEY = 'rent-receipt';
   const REMEMBERED = ['tenant', 'landlord', 'address'];
   // Article 53, Indian Stamp Act: receipts for more than this carry Re 1 duty.
@@ -167,25 +132,25 @@ import Tool from '../../layouts/Tool.astro';
   /** Months as [year, month0] from the From and To boxes, or why they can't be used. */
   function months(): [number, number][] | string {
     const [from, to] = [val('from'), val('to')].map((v) => /^(\d{4})-(0[1-9]|1[0-2])$/.exec(v));
-    if (!from || !to) return val('from') && val('to') ? 'Enter months as YYYY-MM, for example 2026-04.' : '';
+    if (!from || !to) return val('from') && val('to') ? t.monthFormat : '';
     const start = Number(from[1]) * 12 + Number(from[2]) - 1;
     const count = Number(to[1]) * 12 + Number(to[2]) - start;
-    if (count < 1) return 'The To month must be the same as or after the From month.';
-    if (count > MAX_MONTHS) return `Pick at most ${MAX_MONTHS} months at a time.`;
+    if (count < 1) return t.monthOrder;
+    if (count > MAX_MONTHS) return fmt(t.tooManyMonths, { max: MAX_MONTHS });
     return Array.from({ length: count }, (_, i) => [Math.floor((start + i) / 12), (start + i) % 12]);
   }
 
   function render() {
     const rent = toPaise(val('rent'));
     const pan = val('pan').toUpperCase();
-    show($('rent-error'), val('rent') && !(rent > 0) ? 'Enter the monthly rent in rupees, like 15000 or 15000.50.' : '');
-    show($('pan-error'), pan && !isPan(pan) ? 'A PAN is 5 letters, 4 digits and a letter, like ABCDE1234F.' : '');
+    show($('rent-error'), val('rent') && !(rent > 0) ? t.rent : '');
+    show($('pan-error'), pan && !isPan(pan) ? t.pan : '');
     const list = months();
     show($('range-error'), typeof list === 'string' ? list : '');
     const mode = field('mode').value;
     receipts.replaceChildren();
     const extra = typeof list === 'string' ? 0 : list.length - 2;
-    show($('more'), extra > 0 ? `and ${extra} more like these, all of which print` : '');
+    show($('more'), extra > 0 ? fmt(t.more, { n: extra }) : '');
     if (typeof list === 'string') return show(summary, '');
     for (const [y, m] of list) {
       const card = template.content.cloneNode(true) as DocumentFragment;
@@ -202,25 +167,25 @@ import Tool from '../../layouts/Tool.astro';
       (card.querySelector('[data-k="stamp"]') as HTMLElement).hidden = !(mode === 'cash' && rent > STAMP_ABOVE);
       receipts.append(card);
     }
-    const total = rent > 0 ? `, ${rupees(rent * list.length)} in all` : '';
-    show(summary, `${list.length} receipt${list.length === 1 ? '' : 's'}${total}.`);
+    const total = rent > 0 ? fmt(t.total, { total: rupees(rent * list.length) }) : '';
+    show(summary, plural(document.documentElement.lang, list.length, t.summary, { total }));
   }
 
   function check() {
     const missing = [
-      ['tenant', "Enter the tenant's name."],
-      ['landlord', "Enter the landlord's name."],
-      ['address', 'Enter the address of the rented home.'],
-      ['rent', 'Enter the monthly rent.'],
-      ['from', 'Pick the first month.'],
-      ['to', 'Pick the last month.'],
+      ['tenant', t.needTenant],
+      ['landlord', t.needLandlord],
+      ['address', t.needAddress],
+      ['rent', t.needRent],
+      ['from', t.needFrom],
+      ['to', t.needTo],
     ].filter(([id]) => !val(id!));
     const wrong = ['rent-error', 'pan-error', 'range-error'].map((id) => $(id).textContent ?? '').filter(Boolean);
-    const all = [...missing.map(([, text]) => text!), ...wrong];
-    problems.replaceChildren(...all.map((t) => Object.assign(document.createElement('li'), { textContent: t })));
-    problems.hidden = !all.length;
+    const found = [...missing.map(([, text]) => text!), ...wrong];
+    problems.replaceChildren(...found.map((text) => Object.assign(document.createElement('li'), { textContent: text })));
+    problems.hidden = !found.length;
     if (missing.length) field(missing[0]![0]!).focus();
-    return !all.length;
+    return !found.length;
   }
 
   try {
@@ -352,7 +317,6 @@ import Tool from '../../layouts/Tool.astro';
       margin: 10mm;
     }
 
-    :global(body)::before,
     :global(body > :not(main)),
     :global(main > :not(.sheets)) {
       display: none !important;

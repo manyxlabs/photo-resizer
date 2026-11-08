@@ -1,0 +1,55 @@
+---
+import Footer from '../../components/Footer.astro';
+import Header from '../../components/Header.astro';
+import { pageLocale } from '../../i18n';
+import { LANG_PARAMS } from '../../i18n/locales';
+import Base from '../../layouts/Base.astro';
+
+export const getStaticPaths = () => LANG_PARAMS.map((lang) => ({ params: { lang } }));
+
+const { t, href } = pageLocale(Astro.url);
+---
+
+<Base title={t.notFound.title} description={t.notFound.description} noindex>
+  <Header />
+  <main class="wrap">
+    <p class="eyebrow">404</p>
+    <h1>{t.notFound.heading}</h1>
+    <p>
+      <a href={href('/tools/')}>{t.notFound.tools} &rarr;</a>
+      <a href={href('/photo-size/')}>{t.notFound.guides} &rarr;</a>
+    </p>
+  </main>
+  <Footer />
+</Base>
+
+<style>
+  main {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 16px;
+    min-height: 60svh;
+  }
+
+  h1 {
+    font-size: clamp(1.875rem, 6vw, 3rem);
+    line-height: 1.15;
+  }
+
+  p:last-child {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 24px;
+  }
+
+  a {
+    color: rgb(var(--accent-text));
+    font-weight: 500;
+    text-decoration: none;
+  }
+
+  a:hover {
+    text-decoration: underline;
+  }
+</style>

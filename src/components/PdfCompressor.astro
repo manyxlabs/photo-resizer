@@ -1,4 +1,6 @@
 ---
+import { pageLocale } from '../i18n';
+
 interface Props {
   /** The KB limit picked when the page opens; one not in the list fills the custom field. */
   defaultKB?: number;
@@ -7,27 +9,29 @@ interface Props {
 const SIZES = [100, 200, 300, 500, 1000, 2000];
 const { defaultKB = 200 } = Astro.props;
 const custom = !SIZES.includes(defaultKB);
+const { t: all } = pageLocale(Astro.url);
+const t = all.pdf.tool;
 ---
 
-<form id="tool" class="tool" novalidate>
+<form id="tool" class="tool" novalidate data-t={JSON.stringify(t.js)}>
   <section class="panel glass">
-    <h2><span>1</span> Add your PDFs and photos</h2>
+    <h2><span>1</span> {t.add}</h2>
     <label class="drop" id="drop">
       <input id="file" type="file" multiple accept="application/pdf,.pdf,image/*,.heic,.heif,.tif,.tiff" />
-      <strong>Choose files</strong>
-      <span>or drop them here. PDF, JPG, PNG, WebP, HEIC (iPhone), TIFF and more.</span>
+      <strong>{t.choose}</strong>
+      <span>{t.drop}</span>
     </label>
     <p id="file-status" class="hint" aria-live="polite" hidden></p>
     <p id="file-error" class="error" role="alert" hidden></p>
-    <ol id="files" class="files" aria-label="Files, in page order" hidden></ol>
+    <ol id="files" class="files" aria-label={t.files} hidden></ol>
     <p id="total" class="hint" hidden></p>
   </section>
 
   <section class="panel glass">
-    <h2><span>2</span> How big can the PDF be?</h2>
+    <h2><span>2</span> {t.howBig}</h2>
     <div class="grid">
       <label class="field">
-        Max size
+        {t.maxSize}
         <select id="limit">
           {
             SIZES.map((kb) => (
@@ -36,22 +40,22 @@ const custom = !SIZES.includes(defaultKB);
               </option>
             ))
           }
-          <option value="custom" selected={custom}>Custom</option>
+          <option value="custom" selected={custom}>{t.custom}</option>
         </select>
       </label>
       <label class="field" id="custom" hidden={!custom}>
-        Max KB <input id="kb" type="number" min="1" step="any" inputmode="decimal" value={custom ? defaultKB : 150} />
+        {t.maxKB} <input id="kb" type="number" min="1" step="any" inputmode="decimal" value={custom ? defaultKB : 150} />
       </label>
     </div>
     <p id="spec-error" class="error" role="alert" hidden></p>
-    <p class="hint">Check your form's notice for the limit. Pages come out in the order of the list above.</p>
+    <p class="hint">{t.hint}</p>
   </section>
 
   <section class="panel glass" id="out" hidden>
-    <h2><span>3</span> Download</h2>
+    <h2><span>3</span> {t.download}</h2>
     <div class="result">
       <p id="result" aria-live="polite"></p>
-      <a id="download" class="btn primary" download hidden>Download PDF</a>
+      <a id="download" class="btn btn-primary" download hidden>{t.downloadPdf}</a>
     </div>
   </section>
 </form>
@@ -62,6 +66,8 @@ const custom = !SIZES.includes(defaultKB);
   import { openImage } from '../lib/decode';
   import { maxBytes } from '../lib/jpeg';
   import { isPdf, openPdf, PdfPasswordError, renderPage } from '../lib/pdf';
+  import type { Messages } from '../i18n/en';
+  import { fmt, plural } from '../i18n/format';
 
   // Every page is held and redrawn while searching, so a bigger merge gets slow on a phone.
   const MAX_PAGES = 100;
@@ -93,6 +99,8 @@ const custom = !SIZES.includes(defaultKB);
   const out = $<HTMLElement>('out');
   const result = $<HTMLParagraphElement>('result');
   const download = $<HTMLAnchorElement>('download');
+  const t: Messages['pdf']['tool']['js'] = JSON.parse($('tool').dataset.t!);
+  const lang = document.documentElement.lang;
 
   const items: Item[] = [];
   let url = '';
@@ -107,12 +115,12 @@ const custom = !SIZES.includes(defaultKB);
   const kb = (bytes: number) =>
     bytes < 1024 * 1024 ? `${(bytes / 1024).toFixed(1)} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
   const pageCount = () => items.reduce((n, i) => n + i.pages, 0);
-  const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
+  const count = (n: number, forms: keyof Pick<typeof t, 'pages' | 'files'>) => plural(lang, n, t[forms]);
 
   function readLimit(): number | string {
     custom.hidden = limit.value !== 'custom';
     const value = limit.value === 'custom' ? Number(kbInput.value) : Number(limit.value);
-    if (!(value > 0)) return 'Enter the KB limit from your form.';
+    if (!(value > 0)) return t.needKB;
     return value;
   }
 
@@ -189,7 +197,7 @@ const custom = !SIZES.includes(defaultKB);
         pages: [] as Encoded[] | null,
       }));
       for (const [n, draw] of raster.entries()) {
-        progress(`Trying ${dpi} DPI: page ${n + 1} of ${raster.length}…`);
+        progress(fmt(t.trying, { dpi, n: n + 1, total: raster.length }));
         const { canvas, width, height, box } = await draw(dpi);
         for (const run of runs) {
           // The last pass encodes every quality to the end, to say how small the file could get.
@@ -204,7 +212,7 @@ const custom = !SIZES.includes(defaultKB);
       }
       for (const run of runs) {
         if (!run.pages) continue;
-        progress(`Putting the PDF together…`);
+        progress(t.assembling);
         const pdf = await build(keep, run.pages);
         if (pdf.length <= max) return { pdf, dpi, quality: run.quality };
       }
@@ -224,10 +232,10 @@ const custom = !SIZES.includes(defaultKB);
       result.textContent = text;
     };
     const was = items.reduce((n, i) => n + i.file.size, 0);
-    const pages = plural(pageCount(), 'page');
+    const pages = count(pageCount(), 'pages');
     const hasPdf = items.some((i) => i.kind === 'pdf');
     try {
-      progress('Working…');
+      progress(t.working);
       let found: Found;
       let kept = false;
       if (items.length === 1 && items[0]!.kind === 'pdf' && was <= bytes) {
@@ -244,7 +252,7 @@ const custom = !SIZES.includes(defaultKB);
       }
       progress('');
       if ('smallest' in found) {
-        result.textContent = `Even as small, blurry images these ${pages} come to about ${kb(found.smallest)}, over the ${max} KB limit. Remove some pages or use a higher limit.`;
+        result.textContent = fmt(t.tooBig, { pages, size: kb(found.smallest), max });
         return;
       }
       URL.revokeObjectURL(url);
@@ -253,18 +261,14 @@ const custom = !SIZES.includes(defaultKB);
       download.download =
         items.length === 1 ? `${items[0]!.file.name.replace(/\.[^.]*$/, '')}-compressed.pdf` : 'merged.pdf';
       download.hidden = false;
-      const how = kept
-        ? hasPdf
-          ? ' · text kept, so it can still be selected'
-          : ''
-        : ` · ${found.dpi} DPI, quality ${Math.round(found.quality! * 100)}%`;
+      const how = kept ? (hasPdf ? t.kept : '') : fmt(t.raster, { dpi: found.dpi!, quality: Math.round(found.quality! * 100) });
       result.textContent =
-        `${pages} · ${kb(found.pdf.length)}${found.pdf.length < was ? ` (was ${kb(was)})` : ''}${how}` +
-        (!kept && hasPdf ? '. To fit, the pages were turned into images, so the text can no longer be selected or searched.' : '');
+        `${pages} · ${kb(found.pdf.length)}${found.pdf.length < was ? fmt(t.was, { size: kb(was) }) : ''}${how}` +
+        (!kept && hasPdf ? t.rasterNote : '');
     } catch (err) {
       if (err === STALE || mine !== job) return;
       console.error(err);
-      result.textContent = `Couldn't compress these files. Try removing them one at a time to find the one that fails.`;
+      result.textContent = t.failed;
     }
   }
 
@@ -286,12 +290,13 @@ const custom = !SIZES.includes(defaultKB);
         const name = document.createElement('strong');
         const meta = document.createElement('span');
         name.textContent = item.file.name;
-        meta.textContent = `${item.kind === 'pdf' ? plural(item.pages, 'page') : 'Photo, on an A4 page'} · ${kb(item.file.size)}`;
+        meta.textContent = `${item.kind === 'pdf' ? count(item.pages, 'pages') : t.photo} · ${kb(item.file.size)}`;
         text.append(name, meta);
         const button = (label: string, glyph: string, disabled: boolean, act: () => void) => {
           const b = document.createElement('button');
           b.type = 'button';
-          b.className = 'btn';
+          b.className = 'btn-icon';
+          b.dataset.glyph = glyph;
           b.textContent = glyph;
           b.ariaLabel = `${label} "${item.file.name}"`;
           b.title = label;
@@ -304,13 +309,13 @@ const custom = !SIZES.includes(defaultKB);
           renderList();
           changed();
           // Keep focus on the moved file, so it can be moved again from the keyboard.
-          list.children[to]?.querySelector<HTMLButtonElement>(`button[title="${to < i ? 'Move up' : 'Move down'}"]:not(:disabled)`)?.focus();
+          list.children[to]?.querySelector<HTMLButtonElement>(`button[data-glyph="${to < i ? '↑' : '↓'}"]:not(:disabled)`)?.focus();
         };
         li.append(
           text,
-          button('Move up', '↑', i === 0, move(i - 1)),
-          button('Move down', '↓', i === items.length - 1, move(i + 1)),
-          button('Remove', '×', false, () => {
+          button(t.up, '↑', i === 0, move(i - 1)),
+          button(t.down, '↓', i === items.length - 1, move(i + 1)),
+          button(t.remove, '×', false, () => {
             close(items.splice(i, 1)[0]!);
             renderList();
             changed();
@@ -321,7 +326,7 @@ const custom = !SIZES.includes(defaultKB);
     );
     list.hidden = !items.length;
     const size = items.reduce((n, i) => n + i.file.size, 0);
-    show(total, items.length > 1 ? `${plural(items.length, 'file')} · ${plural(pageCount(), 'page')} · ${kb(size)}` : '');
+    show(total, items.length > 1 ? `${count(items.length, 'files')} · ${count(pageCount(), 'pages')} · ${kb(size)}` : '');
   }
 
   const close = (item: Item) => (item.kind === 'pdf' ? item.doc.loadingTask.destroy() : item.bitmap.close());
@@ -335,24 +340,22 @@ const custom = !SIZES.includes(defaultKB);
       return { kind: 'image', file, bitmap: await openImage(file), pages: 1 };
     } catch (err) {
       if (err instanceof PdfPasswordError)
-        return `"${file.name}" is password-protected. Open it, save a copy without the password, and add that instead.`;
-      return `Couldn't open "${file.name}". Use a PDF or a photo or scan: JPG, PNG, WebP, HEIC, AVIF, TIFF, GIF or BMP.`;
+        return fmt(t.locked, { name: file.name });
+      return fmt(t.cantOpen, { name: file.name });
     }
   }
 
   async function add(files: File[]) {
     const errors: string[] = [];
     for (const file of files) {
-      show(fileStatus, `Opening "${file.name}"…`);
+      show(fileStatus, fmt(t.opening, { name: file.name }));
       const item = await open(file);
       if (typeof item === 'string') {
         errors.push(item);
         continue;
       }
       if (pageCount() + item.pages > MAX_PAGES) {
-        errors.push(
-          `"${file.name}" would take this to ${pageCount() + item.pages} pages. The limit is ${MAX_PAGES}, so split it or leave some files out.`,
-        );
+        errors.push(fmt(t.tooMany, { name: file.name, pages: pageCount() + item.pages, max: MAX_PAGES }));
         close(item);
         continue;
       }
@@ -405,9 +408,9 @@ const custom = !SIZES.includes(defaultKB);
     align-items: center;
     gap: 6px;
     padding: 8px 8px 8px 14px;
-    border: 1px solid var(--border);
+    border: 1px solid rgb(var(--fg) / 0.1);
     border-radius: 12px;
-    background: var(--bg);
+    background: rgb(var(--ink));
   }
 
   .files :global(div) {
@@ -426,20 +429,15 @@ const custom = !SIZES.includes(defaultKB);
 
   .files :global(strong) {
     font-size: 0.9375rem;
-    font-weight: 550;
+    font-weight: 500;
   }
 
   .files :global(span) {
-    color: var(--muted);
+    color: rgb(var(--muted));
     font-size: 0.8125rem;
   }
 
-  .files :global(.btn) {
-    flex: none;
-    justify-content: center;
-    width: 40px;
-    min-height: 40px;
-    padding: 0;
+  .files :global(.btn-icon) {
     font-size: 1.125rem;
   }
 </style>

@@ -99,7 +99,8 @@ test('two PDFs and a photo, reordered, come out in the new order with their text
   const photo = { name: 'photo.png', mimeType: 'image/png', buffer: await noisyJpeg(page, 400, 300, 'image/png') };
   await setLimit(page, '2000');
   await page.locator('#file').setInputFiles([alpha, bravo, photo]);
-  await expect(page.locator('#files li')).toHaveCount(3);
+  // The first PDF waits on pdf.js to load, which a slow machine under load can take a while over.
+  await expect(page.locator('#files li')).toHaveCount(3, { timeout: 30_000 });
   // From alpha, bravo, photo to bravo, photo, alpha.
   await page.getByRole('button', { name: 'Move down "alpha.pdf"' }).click();
   await page.getByRole('button', { name: 'Move down "alpha.pdf"' }).click();

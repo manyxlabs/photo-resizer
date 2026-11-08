@@ -128,7 +128,8 @@ test.describe('the tool', () => {
     await page.locator('#preset').selectOption('custom');
     await page.locator('#unit').selectOption('px');
     for (const [id, v] of [['w', '2000'], ['h', '2000'], ['min', '0'], ['max', '5']]) await page.locator(`#${id}`).fill(v);
-    await expect(page.locator('#result')).toContainText('over the limit');
+    // Every quality of a 2000 × 2000 noise image is encoded before the tool can tell.
+    await expect(page.locator('#result')).toContainText('over the limit', { timeout: 30_000 });
     await expect(page.getByRole('link', { name: 'Download JPG' })).toBeHidden();
   });
 

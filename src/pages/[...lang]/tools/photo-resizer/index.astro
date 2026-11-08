@@ -1,0 +1,26 @@
+---
+import Resizer from '../../../../components/Resizer.astro';
+import SizeLinks from '../../../../components/SizeLinks.astro';
+import { pageLocale } from '../../../../i18n';
+import { LANG_PARAMS } from '../../../../i18n/locales';
+import Tool from '../../../../layouts/Tool.astro';
+
+export const getStaticPaths = () => LANG_PARAMS.map((lang) => ({ params: { lang } }));
+
+const { t } = pageLocale(Astro.url);
+const page = t.photoResizer;
+---
+
+<Tool
+  tool="photo-resizer"
+  title={page.title}
+  description={page.description}
+  faq={page.faq}
+  heading={page.heading}
+  lede={page.lede}
+  applicationCategory="MultimediaApplication"
+>
+  <Resizer />
+
+  <SizeLinks />
+</Tool>

@@ -1,0 +1,34 @@
+---
+import FormsAt from '../../../../components/FormsAt.astro';
+import Resizer from '../../../../components/Resizer.astro';
+import SizeLinks from '../../../../components/SizeLinks.astro';
+import { SIGN_KB } from '../../../../data/tools';
+import { pageLocale } from '../../../../i18n';
+import { fmt } from '../../../../i18n/format';
+import { LANG_PARAMS } from '../../../../i18n/locales';
+import Tool from '../../../../layouts/Tool.astro';
+
+export function getStaticPaths() {
+  return LANG_PARAMS.flatMap((lang) => SIGN_KB.map((kb) => ({ params: { lang, size: `${kb}-kb` }, props: { kb } })));
+}
+
+const { kb } = Astro.props as { kb: number };
+const { t } = pageLocale(Astro.url);
+const page = t.signatureResizer;
+---
+
+<Tool
+  tool="signature-resizer"
+  variant={{ path: `/tools/signature-resizer/${kb}-kb/`, name: fmt(t.sizes.signUnder, { kb }) }}
+  title={fmt(page.under.title, { kb })}
+  description={fmt(page.under.description, { kb })}
+  heading={fmt(page.under.heading, { kb })}
+  lede={fmt(page.under.lede, { kb })}
+  faq={page.faq}
+>
+  <FormsAt kb={kb} scan />
+
+  <Resizer kind="scan" maxKB={kb} />
+
+  <SizeLinks kind="scan" />
+</Tool>

@@ -109,7 +109,7 @@ export default {
     },
     ssc: {
       name: 'SSC',
-      title: 'SSC ഫോട്ടോ, ഒപ്പ് സൈസ് {year}',
+      title: 'SSC CGL ഫോട്ടോ, ഒപ്പ് സൈസ് {year}',
       covers: 'CGL, CHSL, JE, Stenographer 2026',
       source: 'SSC CGL 2026 നോട്ടിഫിക്കേഷൻ, ഖണ്ഡിക 9.6',
       notes: [

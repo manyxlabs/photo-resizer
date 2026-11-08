@@ -109,7 +109,7 @@ export default {
     },
     ssc: {
       name: 'SSC',
-      title: 'SSC ఫోటో, సంతకం సైజ్ {year}',
+      title: 'SSC CGL ఫోటో, సంతకం సైజ్ {year}',
       covers: 'CGL, CHSL, JE, Stenographer 2026',
       source: 'SSC CGL 2026 నోటిఫికేషన్, పేరా 9.6',
       notes: [

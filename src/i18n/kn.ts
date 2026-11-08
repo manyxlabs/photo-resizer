@@ -109,7 +109,7 @@ export default {
     },
     ssc: {
       name: 'SSC',
-      title: 'SSC ಫೋಟೋ ಮತ್ತು ಸಹಿ ಗಾತ್ರ {year}',
+      title: 'SSC CGL ಫೋಟೋ ಮತ್ತು ಸಹಿ ಗಾತ್ರ {year}',
       covers: 'CGL, CHSL, JE ಮತ್ತು Stenographer 2026',
       source: 'SSC CGL 2026 ಅಧಿಸೂಚನೆ, ಪ್ಯಾರಾ 9.6',
       notes: [

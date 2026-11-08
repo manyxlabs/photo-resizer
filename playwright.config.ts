@@ -12,5 +12,8 @@ export default defineConfig({
     launchOptions: { executablePath: process.env.CHROMIUM || undefined },
   },
   // BASE_URL runs the suite against a deployed site instead, e.g. a new host before DNS moves.
-  webServer: process.env.BASE_URL ? undefined : { command: `npm run build && npx astro preview --port ${port} --ignore-lock`, port, reuseExistingServer: false },
+  // The build runs first and can take minutes on a loaded or small machine, past the 60s default.
+  webServer: process.env.BASE_URL
+    ? undefined
+    : { command: `npm run build && npx astro preview --port ${port} --ignore-lock`, port, reuseExistingServer: false, timeout: 180_000 },
 });

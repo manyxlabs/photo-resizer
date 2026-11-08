@@ -109,7 +109,7 @@ export default {
     },
     ssc: {
       name: 'SSC',
-      title: 'SSC ફોટો અને સહીની સાઇઝ {year}',
+      title: 'SSC CGL ફોટો અને સહીની સાઇઝ {year}',
       covers: 'CGL, CHSL, JE અને Stenographer 2026',
       source: 'SSC CGL 2026 નોટિસ, ફકરો 9.6',
       notes: [

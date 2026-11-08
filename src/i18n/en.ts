@@ -115,7 +115,7 @@ const en = {
     },
     ssc: {
       name: 'SSC',
-      title: 'SSC photo and signature size {year}',
+      title: 'SSC CGL photo and signature size {year}',
       covers: 'CGL, CHSL, JE and Stenographer 2026',
       source: 'SSC CGL 2026 notice, para 9.6',
       notes: [

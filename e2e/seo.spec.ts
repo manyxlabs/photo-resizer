@@ -28,6 +28,8 @@ async function locs(request: APIRequestContext, path: string): Promise<string[]>
 
 test('every page is in the sitemap, reachable, and described for search and sharing', async ({ request }) => {
   const sitemap = (await Promise.all((await locs(request, '/sitemap-resizer-index.xml')).map((p) => locs(request, p)))).flat();
+  // Every page is fetched in turn, which against the live site takes far longer than the default 30s.
+  test.setTimeout(30_000 + sitemap.length * 1_000);
 
   // Crawl from the hub, so a page no link reaches fails as surely as one the sitemap leaves out.
   const seen = new Map<string, string>();

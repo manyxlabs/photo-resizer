@@ -1,6 +1,6 @@
 ---
 import { pageLocale } from '../i18n';
-import { EMAIL, FOUNDER, GITHUB } from '../site';
+import { EMAIL, GITHUB } from '../site';
 
 const REPO = `${GITHUB}/photo-resizer`;
 const { t, href } = pageLocale(Astro.url);
@@ -15,7 +15,6 @@ const { t, href } = pageLocale(Astro.url);
       <a href={REPO} target="_blank" rel="noopener">{t.footer.source}</a>
       <a href={`${REPO}/issues/new`} target="_blank" rel="noopener">{t.footer.issue}</a>
       <a href={`${REPO}/blob/main/CONTRIBUTING.md`} target="_blank" rel="noopener">{t.footer.contribute}</a>
-      <a href={FOUNDER}>{t.footer.founder}</a>
       <a href={`mailto:${EMAIL}`}>{t.footer.email}</a>
     </nav>
   </div>

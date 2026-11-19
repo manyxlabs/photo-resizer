@@ -27,7 +27,6 @@ export default {
     source: 'സോഴ്സ് കോഡ്',
     issue: 'പ്രശ്നം അറിയിക്കുക',
     contribute: 'കോൺട്രിബ്യൂട്ട് ചെയ്യൂ',
-    founder: 'സ്ഥാപകൻ',
     email: 'ഇമെയിൽ',
   },
 

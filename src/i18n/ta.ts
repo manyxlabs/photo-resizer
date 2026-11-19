@@ -27,7 +27,6 @@ export default {
     source: 'சோர்ஸ் கோடு',
     issue: 'பிழையைத் தெரிவிக்க',
     contribute: 'பங்களிக்க',
-    founder: 'நிறுவனர்',
     email: 'இமெயில்',
   },
 

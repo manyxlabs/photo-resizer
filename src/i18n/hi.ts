@@ -27,7 +27,6 @@ export default {
     source: 'सोर्स कोड',
     issue: 'समस्या बताएं',
     contribute: 'योगदान दें',
-    founder: 'फ़ाउंडर',
     email: 'ईमेल',
   },
 

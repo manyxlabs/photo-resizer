@@ -59,7 +59,7 @@ Where Playwright's own browser is unavailable, point it at a system one with `CH
 
 ## Design
 
-The look follows the shared Manyx Labs design at [www.manyxlabs.com](https://www.manyxlabs.com/) (`src/index.css` in its repo): its colour tokens, glass, buttons, chips and motion are copied as plain CSS into `src/layouts/Base.astro`.
+The look follows the Manyx Labs design: its colour tokens, glass, buttons, chips and motion are copied as plain CSS into `src/layouts/Base.astro`.
 That block is identical in this repo and the website (manyxlabs/website), and so is `src/components/Header.astro`, because both are served on www.manyxlabs.com; change them in both.
 Colour stays neutral: the emerald accent marks only eyebrows, links, status dots, focus rings and the scroll bar, and light-theme accent text uses a deeper emerald so it meets WCAG AA.
 The `dark` class on `<html>` picks the theme, saved in `localStorage` under `theme` and otherwise taken from the system, and a head script applies it before first paint.

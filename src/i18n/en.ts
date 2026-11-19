@@ -30,7 +30,6 @@ const en = {
     source: 'Source',
     issue: 'Report an issue',
     contribute: 'Contribute',
-    founder: 'Founder',
     email: 'Email',
   },
 

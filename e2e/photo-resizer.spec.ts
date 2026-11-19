@@ -35,7 +35,7 @@ async function makeImage(page: Page, kind: 'noisy' | 'flat' | 'portrait', width:
         g.fillRect(0, 0, width, height);
         g.fillStyle = '#111';
         g.font = `${Math.round(height / 3)}px serif`;
-        g.fillText('Manyx Labs', width * 0.1, height * 0.6);
+        g.fillText('Manyx', width * 0.1, height * 0.6);
       }
       // Noise stands in for a camera photo, which arrives as a JPEG; PNG noise would be 36 MB.
       const blob = await c.convertToBlob(kind === 'noisy' ? { type: 'image/jpeg', quality: 0.92 } : { type: 'image/png' });

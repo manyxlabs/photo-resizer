@@ -27,7 +27,6 @@ export default {
     source: 'ಸೋರ್ಸ್ ಕೋಡ್',
     issue: 'ಸಮಸ್ಯೆ ವರದಿ ಮಾಡಿ',
     contribute: 'ಕೊಡುಗೆ ನೀಡಿ',
-    founder: 'ಸಂಸ್ಥಾಪಕ',
     email: 'ಇಮೇಲ್',
   },
 

@@ -27,7 +27,6 @@ export default {
     source: 'સોર્સ કોડ',
     issue: 'સમસ્યા જણાવો',
     contribute: 'યોગદાન આપો',
-    founder: 'સ્થાપક',
     email: 'ઇમેઇલ',
   },
 

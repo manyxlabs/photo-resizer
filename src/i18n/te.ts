@@ -27,7 +27,6 @@ export default {
     source: 'సోర్స్ కోడ్',
     issue: 'సమస్యను తెలపండి',
     contribute: 'సహకరించండి',
-    founder: 'ఫౌండర్',
     email: 'ఈమెయిల్',
   },
 

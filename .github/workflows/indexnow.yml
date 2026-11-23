@@ -5,6 +5,8 @@ name: IndexNow
 on:
   push:
     branches: [main]
+  # Resubmit by hand, for example after a deploy outside a push.
+  workflow_dispatch:
 
 permissions: {}
 
